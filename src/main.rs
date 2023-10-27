@@ -19,7 +19,7 @@ fn main(){
 //实现终端
 struct Tui<W:Write>{
     terminal:CrosstermTerminal<W>,
-    event:EventHandler
+   // event:EventHandler
 }
 impl<W:Write> Tui<W>{
     pub fn new(w: W)->Result<Self,Error>{
@@ -63,7 +63,7 @@ use ratatui::layout::{Layout,Direction::{*},Constraint,Rect};
 use ratatui::widgets::*;
 use ratatui::style::Stylize;
 //pub type Frame<'a>=ratatui::Frame<'a, ratatui::backend::CrosstermBackend<std::io::Stdout>>;
-pub fn render<W:Write>(  f:&mut ratatui::Frame<'_, ratatui::backend::CrosstermBackend<W>>){
+pub fn render<'a>( f:&mut ratatui::Frame<'a>){
     let layout=Layout::default()
     .direction(Vertical)
     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -99,7 +99,7 @@ enum Event{
     Resize(u16,u16),
 }
 //实现事件控制
-use std::{thread,time::{Duration,Instant},sync::mpsc::{self,RecvError}}};
+use std::{thread,time::{Duration,Instant},sync::mpsc::{self,RecvError}};
 struct EventHandler{
  
 }
