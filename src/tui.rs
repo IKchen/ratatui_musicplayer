@@ -5,6 +5,7 @@ use std::{thread,io};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::cursor;
 use crossterm::event::DisableMouseCapture;
+use std::panic;
 //use std::io::*;
  pub struct Tui{
     //终端
@@ -26,7 +27,13 @@ impl Tui{
     pub fn start(&mut self)->Result<(),MyError>{
         crossterm::terminal::enable_raw_mode()?;
         crossterm::execute!(std::io::stdout(), EnterAlternateScreen, cursor::Hide)?;
-        let handler=event::EventHandler::new();
+      //  let handler=event::EventHandler::new();
+        //钩子函数，在startup出问题时，可以执行reset
+        let panic_hook = panic::take_hook();
+        panic::set_hook(Box::new(move |panic| {
+            Self::reset().expect("failed to reset the terminal");
+            panic_hook(panic);
+        }));
         Ok(())
     }
     //退出
@@ -44,5 +51,10 @@ impl Tui{
     pub fn cancel(&mut self)->Result<(),MyError>{
 
         todo!()
+    }
+    pub fn reset()->Result<(),MyError>{
+        terminal::disable_raw_mode()?;
+        crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+        Ok(())
     }
 }

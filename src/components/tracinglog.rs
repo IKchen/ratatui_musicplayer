@@ -2,18 +2,21 @@ use ratatui::{prelude::*, widgets::*};
 use ratatui::prelude::Direction::Vertical;
 use crate::error::MyError;
 use super::Component;
-use std::sync::Mutex;
-use tracing::{Subscriber, Event, event,Level};
+use std::sync::{Arc, Mutex};
+use tracing::{Subscriber, Event, event, Level, info, warn};
 use tracing_subscriber::layer::Context;
 use tracing_subscriber::Layer;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use log::log;
+
 pub struct TracingLog{
-    logs: Mutex<Vec<String>>,
+    logs: Arc<Mutex<Vec<String>>>,
 }
 
 impl TracingLog {
   pub fn new() -> Self {
         Self{
-            logs: Mutex::new(Vec::new()),
+            logs: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }
@@ -28,18 +31,29 @@ impl<S: Subscriber> Layer<S> for TracingLog {
 }
 impl Component for TracingLog{
     fn draw(&mut self ,f:&mut ratatui::Frame<'_>,rect: Rect)->Result<(),MyError>{
-        event!(Level::INFO, "KAISHI XUANRAN");
-        let layout=Layout::default()
-            .direction(Vertical)
-            .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
-            .split(Rect::new(0, 0, 10, 10));
-        f.render_widget(Paragraph::new("内容1")
-                            .block( Block::new()
-                                .title("标题1").red()
-                                .borders(Borders::ALL)).blue().on_green(), layout[0]);
-        f.render_widget(Paragraph::new("内容2")
+        let logs_shared = self.logs.clone();
+        let subscriber = tracing_subscriber::registry().with(TracingLog {
+            logs: logs_shared.clone(),
+        });
+
+        tracing::subscriber::set_global_default(subscriber).expect("设置订阅者失败");
+        info!("这是一条信息日志");
+        warn!("这是一条警告日志");
+        // 这里我们使用克隆的Arc来访问日志
+        let logs = logs_shared.lock().unwrap();
+        let text = logs.join( "\n");
+        let layout=Layout::new(
+            Direction::Vertical,
+            [Constraint::Percentage(50), Constraint::Percentage(50)],
+        )
+            .split(rect);
+        f.render_widget(Paragraph::new(text)
                             .block( Block::new()
                                 .title("标题2").red()
+                                .borders(Borders::ALL)).blue().on_green(), layout[0]);
+        f.render_widget(Paragraph::new("内容3")
+                            .block( Block::new()
+                                .title("标题3").red()
                                 .borders(Borders::ALL)), layout[1]);
         Ok(())
     }

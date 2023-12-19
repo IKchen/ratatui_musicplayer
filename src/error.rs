@@ -1,5 +1,6 @@
 use  std::io::Error;
 
+#[derive(Debug)]
 pub enum MyError{
     IoError(std::io::Error),
 }
