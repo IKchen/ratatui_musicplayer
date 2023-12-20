@@ -44,17 +44,14 @@ impl Component for TracingLog{
         let text = logs.join( "\n");
         let layout=Layout::new(
             Direction::Vertical,
-            [Constraint::Percentage(50), Constraint::Percentage(50)],
+            [Constraint::Percentage(100)],
         )
             .split(rect);
         f.render_widget(Paragraph::new(text)
                             .block( Block::new()
-                                .title("标题2").red()
-                                .borders(Borders::ALL)).blue().on_green(), layout[0]);
-        f.render_widget(Paragraph::new("内容3")
-                            .block( Block::new()
-                                .title("标题3").red()
-                                .borders(Borders::ALL)), layout[1]);
+                                .title("tracing日志").red()
+                                .borders(Borders::ALL)).blue(), layout[0]);
+
         Ok(())
     }
     fn update(& mut self)->Result<(),MyError>{

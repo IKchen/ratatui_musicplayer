@@ -7,6 +7,7 @@ use crate::error::MyError;
 //引入组件
 pub mod home;
 pub mod tracinglog;
+mod quit;
 
 pub trait Component{
 

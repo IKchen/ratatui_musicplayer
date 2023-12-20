@@ -19,13 +19,24 @@ impl Component for Home{
     fn draw(&mut self ,f:&mut ratatui::Frame<'_>,rect: Rect)->Result<(),MyError>{
         let layout=Layout::new(
             Direction::Vertical,
-            [Constraint::Percentage(50), Constraint::Percentage(50)],
+            [Constraint::Percentage(80), Constraint::Percentage(20)],
         )
             .split(f.size());
-        f.render_widget(Paragraph::new("内容1")
+
+        let mut sub_layout=Layout::new(
+            Direction::Horizontal,
+            [Constraint::Percentage(25),Constraint::Percentage(75)],
+        ).split(layout[0]);
+
+        f.render_widget(Paragraph::new("文件")
                             .block( Block::new()
-                                .title("标题1").red()
-                                .borders(Borders::ALL)).blue().on_green(), layout[0]);
+                                .title("文件列表").red()
+                                .borders(Borders::ALL)).blue(), sub_layout[0]);
+
+        f.render_widget(Paragraph::new("播放区")
+                            .block( Block::new()
+                                .title("播放区").red()
+                                .borders(Borders::ALL)).blue(), sub_layout[1]);
 
         let mut tracinglog=TracingLog::new();
         tracinglog.draw(f,layout[1]);

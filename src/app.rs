@@ -3,18 +3,35 @@ use crate::error::MyError;
 use crate:: tui::Tui;
 use crate::components::home::Home;
 use crate::components::Component;
-
+use crate::event;
+use crate::action::ActionReactor;
+use crate::action::Action;
 pub struct App{
-    should_quit:bool,
+    pub should_quit:bool,
+    pub tick_rate: f64,
+    pub frame_rate: f64,
 }
 impl App{
     pub fn new()->Self{
         let should_quit =false;
-        Self{should_quit}
+        let frame_rate=60.0;
+        let tick_rate=60.0;
+        Self{should_quit,frame_rate,tick_rate}
     }
-    pub fn run(&mut self)->Result<(),MyError>{
+    pub async fn run(&mut self)->Result<(),MyError>{
         let mut tui = Tui::new()?;
         let mut home=Home::new();
+        let mut handler=event::EventHandler::new();
+        let mut reactor=ActionReactor::new();
+        //运行事件handler
+        handler.run(self.tick_rate,self.frame_rate)?;
+        //循环判断事件
+        loop {
+            if let Some(eve)=handler.next().await{
+                reactor.run(eve);
+                break
+            }
+        }
         tui.start().expect("初始化失败");
         tui.terminal.draw(|frame|
                      {home.draw(frame,frame.size());}

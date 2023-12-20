@@ -11,23 +11,20 @@ use std::panic;
     //终端
     pub terminal:Terminal<Backend<std::io::Stdout>>,
     //帧率
-    pub frame_rate: f64,
-    pub tick_rate: f64,
+
  }
 
 impl Tui{
     //实例化
     pub fn new()->Result<Self,MyError>{
         let terminal=ratatui::Terminal::new(Backend::new(std::io::stdout()))?;
-        let frame_rate=60.0;
-        let tick_rate=60.0;
-        Ok(Self{terminal,frame_rate,tick_rate})
+
+        Ok(Self{terminal})
     }
     //启动
     pub fn start(&mut self)->Result<(),MyError>{
         crossterm::terminal::enable_raw_mode()?;
         crossterm::execute!(std::io::stdout(), EnterAlternateScreen, cursor::Hide)?;
-      //  let handler=event::EventHandler::new();
         //钩子函数，在startup出问题时，可以执行reset
         let panic_hook = panic::take_hook();
         panic::set_hook(Box::new(move |panic| {
