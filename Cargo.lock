@@ -454,6 +454,7 @@ dependencies = [
  "futures",
  "log",
  "ratatui",
+ "serde",
  "tokio",
  "tokio-util",
  "tracing",

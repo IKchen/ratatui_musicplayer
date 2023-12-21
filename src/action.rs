@@ -1,4 +1,5 @@
 use std::{fmt, string::ToString};
+use futures::future::ok;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
@@ -54,9 +55,10 @@ impl ActionReactor{
     pub fn run(&mut self,event:Event){
         match event {
             Event::Quit=>{
-                self.sender.send(Action::Quit)?
+                self.sender.send(Action::Quit);
             }
             _=>{}
         }
+       // Ok(())
     }
 }

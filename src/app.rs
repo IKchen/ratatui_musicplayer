@@ -6,6 +6,8 @@ use crate::components::Component;
 use crate::event;
 use crate::action::ActionReactor;
 use crate::action::Action;
+use crate::render::Render;
+
 pub struct App{
     pub should_quit:bool,
     pub tick_rate: f64,
@@ -23,6 +25,7 @@ impl App{
         let mut home=Home::new();
         let mut handler=event::EventHandler::new();
         let mut reactor=ActionReactor::new();
+        let mut render=Render::new(& mut reactor.recever,& mut tui);
         //运行事件handler
         handler.run(self.tick_rate,self.frame_rate)?;
         //循环判断事件
@@ -31,6 +34,9 @@ impl App{
                 reactor.run(eve);
                 break
             }
+        }
+        loop{
+            render.run().await?;
         }
         tui.start().expect("初始化失败");
         tui.terminal.draw(|frame|
