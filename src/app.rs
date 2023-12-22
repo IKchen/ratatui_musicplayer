@@ -1,4 +1,5 @@
-
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc;
 use crate::error::MyError;
 use crate:: tui::Tui;
 use crate::components::home::Home;
@@ -24,8 +25,13 @@ impl App{
         let mut tui = Tui::new()?;
         let mut home=Home::new();
         let mut handler=event::EventHandler::new();
-        let mut reactor=ActionReactor::new();
-        let mut render=Render::new(& mut reactor.recever,& mut tui);
+
+        let (sender, recever) = mpsc::unbounded_channel();
+        let shared_recever = Arc::new(Mutex::new(recever));
+
+
+        let mut reactor=ActionReactor::new(shared_recever.clone(),sender.clone());
+        let mut render=Render::new( shared_recever.clone(), tui);
         //运行事件handler
         handler.run(self.tick_rate,self.frame_rate)?;
         //循环判断事件

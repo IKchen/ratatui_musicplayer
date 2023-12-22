@@ -1,4 +1,5 @@
 use std::{fmt, string::ToString};
+use std::sync::{Arc, Mutex};
 use futures::future::ok;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -42,14 +43,14 @@ pub struct ActionReactor{
     pub task:JoinHandle<()>,
     pub cancelation_token:CancellationToken,
     pub sender:UnboundedSender<Action>,
-    pub recever:UnboundedReceiver<Action>,
+    pub recever: Arc<Mutex<UnboundedReceiver<Action>>>,
 }
 impl ActionReactor{
-    pub fn new()->Self{
+    pub fn new(recever:Arc<Mutex<UnboundedReceiver<Action>>>,send:UnboundedSender<Action>)->Self{
         let action=Action::None;
         let task = tokio::spawn(async {});
         let cancelation_token=CancellationToken::new();
-        let (sender,recever)=mpsc::unbounded_channel();
+        let sender=send;
         Self{action,task,cancelation_token,sender,recever}
     }
     pub fn run(&mut self,event:Event){

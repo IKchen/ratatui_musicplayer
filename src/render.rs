@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
@@ -7,16 +8,16 @@ use crate::components::quit::Quit;
 use crate::components::Component;
 use crate::error::MyError;
 
-pub struct Render<'a>{
+pub struct Render{
     //pub action:Action,
     pub task:JoinHandle<()>,
     pub cancelation_token:CancellationToken,
    // pub sender:UnboundedSender<Action>,
-    pub recever: &'a mut UnboundedReceiver<Action>,
-    pub tui: &'a mut Tui,
+   pub recever: Arc<Mutex<UnboundedReceiver<Action>>>,
+    pub tui:  Tui,
 }
-impl<'a> Render<'a>{
-    pub fn new(action_receve:&'a mut UnboundedReceiver<Action>,tui_terminal:&'a mut Tui)->Self{
+impl Render{
+    pub fn new(action_receve:Arc<Mutex<UnboundedReceiver<Action>>>,tui_terminal: Tui)->Self{
         let mut recever=action_receve;
         let task = tokio::spawn(async {});
         let cancelation_token=CancellationToken::new();
@@ -24,7 +25,8 @@ impl<'a> Render<'a>{
         Self{recever,task,cancelation_token,tui}
     }
    pub async fn run(&mut self)->Result<(),MyError>{
-        if let Some(rece)= self.recever.recv( ).await{
+       let mut receiver = self.recever.lock().unwrap();
+        if let Some(rece)= receiver.recv( ).await{
             match rece{
                 Action::Quit=>{
                     self.tui.terminal.draw(|frame|
