@@ -5,6 +5,7 @@ mod components;
 mod app;
 mod action;
 mod render;
+//mod config;
 
 use crate::{
     components:: {home::Home,Component,tracinglog::TracingLog}

@@ -8,6 +8,7 @@ use tokio::{
 };
 use futures::{FutureExt, StreamExt};
 use crate::error::MyError;
+#[derive(Debug)]
 pub enum  Event{
     Init,
     Quit,
@@ -28,16 +29,16 @@ pub struct EventHandler{
     pub task:JoinHandle<()>,
     pub cancelation_token:CancellationToken,
     pub sender:UnboundedSender<Event>,
-    pub recever:UnboundedReceiver<Event>,
+   // pub recever:UnboundedReceiver<Event>,
 }
 impl  EventHandler{
     //初始化
-    pub fn new()->Self{
+    pub fn new(event_sender:UnboundedSender<Event>)->Self{
         let event=Event::None;
         let task = tokio::spawn(async {});
         let cancelation_token=CancellationToken::new();
-        let (sender,recever)=mpsc::unbounded_channel();
-        Self{event,task,cancelation_token,sender,recever}
+        let sender= event_sender;
+        Self{event,task,cancelation_token,sender}
     }
     //运行
     pub fn run(&mut self,tick_rate:f64,render_rate:f64)->Result<(),MyError>{
@@ -45,15 +46,20 @@ impl  EventHandler{
         let _event_tx = self.sender.clone();
         let tick_delay = std::time::Duration::from_secs_f64(1.0 / tick_rate);
         let render_delay = std::time::Duration::from_secs_f64(1.0 / render_rate);
-        let task=tokio::spawn(
+         self.task=tokio::spawn(
+           //避免声明周期问题，变量全部传递独立所有权，而不是引用self
+            //在 Rust 中，你不能在同一时间既借用一个值又修改它，因为这可能导致数据竞争和不一致。
             Self::async_task(_event_tx,_cancelation_token,tick_delay,render_delay)
         );
         Ok(())
     }
     //接收下一事件
-    pub async fn next(&mut self)->Option<Event>{
-        self.recever.recv().await
-    }
+   /* pub async fn next(&mut self)->Option<Event>{
+      let event_recv= self.recever.recv().await;
+      //  println!("receiver is {:?}\n",event_recv);
+        event_recv
+
+    }*/
     pub fn close(&mut self){
     self.cancelation_token.cancel();
     }
@@ -76,6 +82,7 @@ impl  EventHandler{
                                   CrosstermEvent::Key(key) => {
                                     if key.kind == KeyEventKind::Press {
                                       _event_tx.send(Event::Key(key)).unwrap();
+                                         println!("发送事件{:?}\n",Event::Key(key));
                                     }
                                   },
                                   CrosstermEvent::Mouse(mouse) => {

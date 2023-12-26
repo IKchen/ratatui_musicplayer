@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use log::info;
 use tokio::sync::mpsc;
 use crate::error::MyError;
 use crate:: tui::Tui;
@@ -22,32 +23,32 @@ impl App{
         Self{should_quit,frame_rate,tick_rate}
     }
     pub async fn run(&mut self)->Result<(),MyError>{
+
+        // 创建 EventHandler 和 ActionReactor 之间的通道
+        let (event_sender, event_receiver) = mpsc::unbounded_channel();
+
+        // 创建 ActionReactor 和 Renderer 之间的通道
+        let (action_sender, action_receiver) = mpsc::unbounded_channel();
         let mut tui = Tui::new()?;
         let mut home=Home::new();
-        let mut handler=event::EventHandler::new();
-
-        let (sender, recever) = mpsc::unbounded_channel();
-        let shared_recever = Arc::new(Mutex::new(recever));
+        let mut handler=event::EventHandler::new(event_sender);
 
 
-        let mut reactor=ActionReactor::new(shared_recever.clone(),sender.clone());
-        let mut render=Render::new( shared_recever.clone(), tui);
+
+
+        tui.start().expect("初始化失败");
+        info!("初始化成功！");
+        println!("初始化成功！\n");
+        //把通道传递给 reactor 和render
+        let mut reactor=ActionReactor::new(action_sender,event_receiver);
+        let mut render=Render::new(action_receiver, tui);
+
         //运行事件handler
         handler.run(self.tick_rate,self.frame_rate)?;
         //循环判断事件
-        loop {
-            if let Some(eve)=handler.next().await{
-                reactor.run(eve);
-                break
-            }
-        }
-        loop{
-            render.run().await?;
-        }
-        tui.start().expect("初始化失败");
-        tui.terminal.draw(|frame|
-                     {home.draw(frame,frame.size());}
-        )?;
+        reactor.run();
+        render.run().await?;
+
         Ok(())
     }
 }
