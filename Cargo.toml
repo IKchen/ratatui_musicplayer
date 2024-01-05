@@ -15,3 +15,4 @@ tracing-subscriber = "0.3.18"
 log = "0.4.20"
 futures = "0.3.29"
 serde = "1.0.193"
+tokio-stream= { version = "0.1.14", features = [] }

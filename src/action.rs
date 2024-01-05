@@ -64,13 +64,14 @@ impl ActionReactor {
         }
     }
 
-    pub fn run(&mut self) {
+    pub  fn run(&mut self) ->JoinHandle<()>{
         let action_sender = self.action_sender.clone();
         let cancelation_token = self.cancelation_token.clone();
         let event_receiver = Arc::clone(&self.event_receiver);
 
-        self.task = tokio::spawn(async move {
+        tokio::spawn(async move {
             loop {
+                //为什么要用if？ 如果把cancelation的判读设置成异步任务，如果其他任务频繁执行，可能导致取消任务永远无法执行
                 if cancelation_token.is_cancelled() {
                     break;
                 }
@@ -99,6 +100,13 @@ impl ActionReactor {
                             _ => (),
                         }
                     }
+                    Some(Event::Render)=>{
+                        if let Err(err) = action_sender.send(Action::Render) {
+                            println!("Error sending action: {:?}", err);
+                        } else {
+                            println!("Sent action: {:?}", Action::Render);
+                        }
+                    }
                     None => {
                         // Handle channel closure
                         break;
@@ -106,6 +114,6 @@ impl ActionReactor {
                     _ => (),
                 }
             }
-        });
+        })
     }
 }
