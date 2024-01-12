@@ -5,6 +5,7 @@ use tokio::sync::Mutex;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::{JoinHandle, spawn};
 use tokio_util::sync::CancellationToken;
+use tracing::info;
 use crate::action::Action;
 use crate::components::Component;
 use crate::components::home::Home;
@@ -34,7 +35,7 @@ impl Render {
         }
     }
 
-    pub  fn run(& mut self)->JoinHandle<Result<(), MyError>>{
+    pub  fn run(& mut self) ->JoinHandle<Result<(), MyError>>{
         let action_receiver = Arc::clone(&self.action_receiver);
         let tui = Arc::clone(&self.tui);
 
@@ -46,14 +47,25 @@ impl Render {
                     match act_recv {
                         Some(Action::Render) => {
                             let mut home = Home::new();
-                            println!("receive action: {:?}", Action::Render);
-                            tui.lock().await.terminal.draw(|frame| {
-                                home.draw(frame, frame.size()).expect("绘制图形失败")
-                            })?;
+                            let mut quit = Quit::new();
+                            info!("receive action: {:?}", Action::Render);
+                         //   println!("开始绘制");
+                                tui.lock().await.terminal.draw(|frame| {
+                                   // println!("正在绘制");
+                                    home.draw(frame, frame.size()).expect("绘制图形失败")
+                                })?;
+
                         }
                         Some(Action::Quit) => {
                             let mut quit = Quit::new();
-                            println!("receive action: {:?}", Action::Quit);
+                            info!("receive action: {:?}", Action::Quit);
+                            tui.lock().await.terminal.draw(|frame| {
+                                quit.draw(frame, frame.size()).expect("绘制图形失败")
+                            })?;
+                        }
+                        Some(Action::Tick) => {
+                            let mut quit = Quit::new();
+                            info!("receive action: {:?}", Action::Quit);
                             tui.lock().await.terminal.draw(|frame| {
                                 quit.draw(frame, frame.size()).expect("绘制图形失败")
                             })?;

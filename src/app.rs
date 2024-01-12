@@ -14,6 +14,7 @@ use crate::event;
 use crate::action::ActionReactor;
 use crate::action::Action;
 use crate::render::Render;
+use crate::tracing::TracingLog;
 
 pub struct App{
     pub should_quit:bool,
@@ -38,13 +39,14 @@ impl App{
         let mut home=Home::new();
         let mut handler=event::EventHandler::new(event_sender);
 
-
-
+        //初始化tracing日志
+        let mut tracinglog=TracingLog::new();
+        tracinglog.initialize_logging()?;
 
         tui.start().expect("初始化失败");
         info!("初始化成功！");
-        println!("初始化成功！\n");
-        //把通道传递给 reactor 和render
+       // println!("初始化成功！\n");
+        //把通道接收端，发送端传递给 reactor 和render
         let mut reactor=ActionReactor::new(action_sender,event_receiver);
         let mut render=Render::new(action_receiver, tui);
 

@@ -1,9 +1,10 @@
 use ratatui::{prelude::*, widgets::*};
 use ratatui::prelude::Direction::Vertical;
+use tracing::info;
 use crate::error::MyError;
 use super::Component;
 use  crate::components ::tracinglog;
-use crate::components::tracinglog::TracingLog;
+use crate::tracing::TracingLog;
 
 pub struct Home {
     component_name:String,
@@ -38,8 +39,9 @@ impl Component for Home{
                                 .title("播放区").red()
                                 .borders(Borders::ALL)).blue(), sub_layout[1]);
 
-        let mut tracinglog=TracingLog::new();
-        tracinglog.draw(f,layout[1]);
+        //获取tracinglog struct实例
+        let mut tracinglog=self.get_logging();
+        tracinglog.draw(f,layout[1])?;
         Ok(())
     }
     fn update(& mut self)->Result<(),MyError>{

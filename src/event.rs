@@ -11,6 +11,7 @@ use futures::{FutureExt, StreamExt};
 use futures::channel::oneshot::Cancellation;
 use futures::future::{ok, select};
 use tokio::time::Instant;
+use tracing::info;
 use crate::error::MyError;
 #[derive(Debug)]
 pub enum  Event{
@@ -18,7 +19,7 @@ pub enum  Event{
     Quit,
     Error,
     Closed,
-    Tick,
+    Tick,//无事件时，渲染间隔控制
     Render,
     FocusGained,
     FocusLost,
@@ -182,7 +183,7 @@ impl  EventHandler {
                     CrosstermEvent::Key(key) => {
                         if key.kind == KeyEventKind::Press {
                             event_tx.send(Event::Key(key)).unwrap();
-                            println!("send the event is {:?}\n", Event::Key(key));
+                            info!("send the event is {:?}\n", Event::Key(key));
                         }
                     },
                     CrosstermEvent::Mouse(mouse) => {
@@ -209,27 +210,33 @@ impl  EventHandler {
         let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
         let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 60.0));
         loop {
-            println!("进入循环  is {:?}",render_interval);
+            info!("进入循环  is {:?}",render_interval);
             let crossterm_event = reader.next().fuse();
             if cancellation_token.is_cancelled() {
                 break;
             }
             tokio::select! {
                     maybe_event=crossterm_event=> {
-                    match  maybe_event{
-                        Some(Ok(evt))=>{
-                             println!("crossterm_event is {:?}",evt);
-                        Self::handle_crossterm_event(&event_tx, evt);
+                        match  maybe_event{
+                            Some(Ok(evt))=>{
+                                   info!("crossterm_event is {:?}",evt);
+                            Self::handle_crossterm_event(&event_tx, evt);
+                            }
+                            Some(Err(err)) => {
+                                         event_tx.send(Event::Error).ok();
+                             }
+                             None => {},
                         }
-                        Some(Err(err)) => {
-                                     event_tx.send(Event::Error).ok();
-                         }
-                         None => {},
                     }
-
-                    }
+                     _ = tick_interval.tick() => {
+                      //  event_tx.send(Event::Tick).unwrap();
+                    },
+                    _ = render_interval.tick() => {
+                        event_tx.send(Event::Render).unwrap();
+                        //println!("render is  tick");
+                    },
                 }
-            println!("退出select");
+            info!("退出select");
         }
 
     }
@@ -241,16 +248,16 @@ pub async  fn tick_test()->Result<(), MyError>{
     let mut cancelation_token = CancellationToken::new();
     let start_time = Instant::now();
     loop {
-        println!("进入循环  is {:?}",render_interval);
+        info!("进入循环  is {:?}",render_interval);
         let current_time = Instant::now();
         //  let crossterm_event =  futures::StreamExt::next(&mut reader).fuse();
         if cancelation_token.is_cancelled() {
-            println!("is_cancelled is cancelled");
+            info!("is_cancelled is cancelled");
             break;
         }
         let elapsed_time = current_time - start_time;
         if elapsed_time >= Duration::from_secs(5) {
-            println!("is_cancelled is 准备取消1" );
+            info!("is_cancelled is 准备取消1" );
             cancelation_token.cancel();
 
         }

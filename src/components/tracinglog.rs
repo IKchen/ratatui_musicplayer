@@ -1,52 +1,24 @@
+use std::sync::Arc;
 use ratatui::{prelude::*, widgets::*};
-use ratatui::prelude::Direction::Vertical;
 use crate::error::MyError;
 use super::Component;
-use std::sync::{Arc, Mutex};
+
 use tracing::{Subscriber, Event, event, Level, info, warn};
-use tracing_subscriber::layer::Context;
-use tracing_subscriber::Layer;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
-use log::log;
 
-pub struct TracingLog{
-    logs: Arc<Mutex<Vec<String>>>,
-}
+use crate::tracing::TracingLog;
 
-impl TracingLog {
-  pub fn new() -> Self {
-        Self{
-            logs: Arc::new(Mutex::new(Vec::new())),
-        }
-    }
-}
-impl<S: Subscriber> Layer<S> for TracingLog {
-    fn on_event(&self, event: &Event<'_>, _ctx: Context<'_, S>) {
-        let mut logs = self.logs.lock().unwrap();
-        // 将事件格式化为字符串并存储
-        let log = format!("{:?}", event);
-        logs.push(log);
-        // 这里可以添加逻辑以限制日志的大小
-    }
-}
 impl Component for TracingLog{
     fn draw(&mut self ,f:&mut ratatui::Frame<'_>,rect: Rect)->Result<(),MyError>{
-        let logs_shared = self.logs.clone();
-        let subscriber = tracing_subscriber::registry().with(TracingLog {
-            logs: logs_shared.clone(),
-        });
-
-        tracing::subscriber::set_global_default(subscriber).expect("设置订阅者失败");
-        info!("这是一条信息日志");
-        warn!("这是一条警告日志");
         // 这里我们使用克隆的Arc来访问日志
-        let logs = logs_shared.lock().unwrap();
-        let text = logs.join( "\n");
+        let logs = self.get_log();//获取logo值
+        let text = logs.lock().unwrap().join( "\n");
+       // println!("text is {:?}",text);
         let layout=Layout::new(
             Direction::Vertical,
             [Constraint::Percentage(100)],
         )
             .split(rect);
+        info!("进入draw函数");
         f.render_widget(Paragraph::new(text)
                             .block( Block::new()
                                 .title("tracing日志").red()
@@ -57,4 +29,12 @@ impl Component for TracingLog{
     fn update(& mut self)->Result<(),MyError>{
         Ok(())
     }
+
+    //获取日志 struct 本身，方便其他组件draw 时获取
+    fn get_logging( & self)->TracingLog{
+        let tracinglog =self.clone();
+        tracinglog
+        //self.clone()
+    }
+
 }

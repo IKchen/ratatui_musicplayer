@@ -5,25 +5,14 @@ mod components;
 mod app;
 mod action;
 mod render;
+mod tracing;
 //mod config;
 
-use crate::{
-    components:: {home::Home,Component,tracinglog::TracingLog}
-
-};
-use crossterm::terminal::{self,
-                          EnterAlternateScreen, LeaveAlternateScreen};
-use crossterm::event::*;
-use std::io::{self,Error,Write,Stdout};
-use std::panic;
-use std::time::{Duration, Instant};
-use ratatui::backend::CrosstermBackend;
-use crossterm::cursor::EnableBlinking;
-use futures::future::ok;
-use tokio_util::sync::CancellationToken;
-use tracing::{Subscriber, Event,event as logevent,Level};
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
-use tracing::{info, warn};
+use crate::components::Component;
+use std::io::Write;
+// use tracing::{Event, event as logevent, Level, Subscriber};
+// use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+// use tracing::{info, warn};
 use app::App;
 use crate::error::MyError;
 

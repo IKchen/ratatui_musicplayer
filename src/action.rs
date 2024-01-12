@@ -13,6 +13,8 @@ use serde::{
 };
 use crate::event::Event;
 use futures::{FutureExt, StreamExt};
+use tracing::info;
+
 //// ANCHOR: action_enum
 #[derive(Debug, Clone, PartialEq, Eq, Serialize,  Deserialize)]
 pub enum Action {
@@ -45,6 +47,7 @@ pub struct ActionReactor {
     pub cancelation_token: CancellationToken,
     pub action_sender: UnboundedSender<Action>,
     pub event_receiver: Arc<Mutex<UnboundedReceiver<Event>>>,
+    pub last_tick_key_events_react:Vec<Action>,//tick的时候，记录上一次事件，存储的action
 
 }
 
@@ -55,12 +58,14 @@ impl ActionReactor {
         let cancelation_token = CancellationToken::new();
         let action_sender = sender;
         let event_receiver = Arc::new(Mutex::new(receiver));
+        let last_tick_key_events_react=Vec::new();
         Self {
             action,
             task,
             cancelation_token,
             action_sender,
             event_receiver,
+            last_tick_key_events_react,
         }
     }
 
@@ -68,6 +73,7 @@ impl ActionReactor {
         let action_sender = self.action_sender.clone();
         let cancelation_token = self.cancelation_token.clone();
         let event_receiver = Arc::clone(&self.event_receiver);
+        let mut last_tick_key_events_react = self.last_tick_key_events_react.clone();
 
         tokio::spawn(async move {
             loop {
@@ -92,9 +98,10 @@ impl ActionReactor {
                         match key_event.code {
                             KeyCode::Char('q') => {
                                 if let Err(err) = action_sender.send(Action::Quit) {
-                                    println!("Error sending action: {:?}", err);
+                                    info!("Error sending action: {:?}", err);
                                 } else {
-                                    println!("Sent action: {:?}", Action::Quit);
+                                    last_tick_key_events_react.push(Action::Quit);
+                                    info!("Sent action: {:?}", Action::Quit);
                                 }
                             }
                             _ => (),
@@ -104,8 +111,20 @@ impl ActionReactor {
                         if let Err(err) = action_sender.send(Action::Render) {
                             println!("Error sending action: {:?}", err);
                         } else {
-                            println!("Sent action: {:?}", Action::Render);
+                            // last_tick_key_events_react.push(Action::Render);
+                           //  println!("Sent action: {:?}", Action::Render);
                         }
+                    }
+                    Some(Event::Tick)=>{
+                        //   if let Some(last_react) = last_tick_key_events_react.last().cloned()
+                        // {
+                        //     if let Err(err) = action_sender.send(last_react.clone()) {
+                        //         println!("Error sending action: {:?}", err);
+                        //     } else {
+                        //         last_tick_key_events_react.drain(..);//清空数组
+                        //         println!("Sent action: {:?}", Action::Tick);
+                        //     }
+                        // }
                     }
                     None => {
                         // Handle channel closure
