@@ -1,6 +1,9 @@
+use std::sync::{Arc};
 use futures::future::ok;
 use ratatui::{prelude::*, widgets::*};
 use ratatui::prelude::Direction::Vertical;
+use tokio::sync::Mutex;
+use crate::app::App;
 use crate::error::MyError;
 use super::Component;
 
@@ -16,7 +19,7 @@ impl Quit{
 }
 
 impl Component for Quit{
-    fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) -> Result<(), MyError> {
+    fn draw(&mut self, f: &mut Frame<'_>, rect: Rect,app:Arc<App>) -> Result<(), MyError> {
         f.render_widget(Clear, f.size());
         let exit_block=Block::default()
             .title("Y/N")

@@ -14,6 +14,7 @@ use std::io::Write;
 // use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 // use tracing::{info, warn};
 use app::App;
+use crate::app::runner;
 use crate::error::MyError;
 
 
@@ -27,7 +28,8 @@ async fn main()->Result<(),MyError>{
    // let subscriber = tracing_subscriber::registry().with(logger);
  //   tracing::subscriber::set_global_default(subscriber).expect("设置订阅者失败");
     let mut app=App::new();
-    app.run().await?;
+   // app.run().await?;
+    runner(app).await?;
  //    let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
  //    let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 60.0));
  //    let mut cancelation_token = CancellationToken::new();

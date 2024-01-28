@@ -1,26 +1,31 @@
+use std::sync::{Arc};
 use ratatui::{prelude::*, widgets::*};
 use ratatui::prelude::Direction::Vertical;
+use tokio::sync::Mutex;
 use tracing::info;
+use crate::app::App;
 use crate::error::MyError;
 use super::Component;
-use  crate::components ::tracinglog;
+use  crate::components::tracinglog::TracingLogComponent;
 use crate::tracing::TracingLog;
 
 pub struct Home {
     component_name:String,
+   pub log:String
 }
 impl  Home{
-    pub fn new() -> Self {
+    pub fn new(log:String) -> Self {
         let component_name ="none".to_string();
-        Self {component_name }
+        let log=log;
+        Self {component_name,log }
     }
 
 }
 impl Component for Home{
-    fn draw(&mut self ,f:&mut ratatui::Frame<'_>,rect: Rect)->Result<(),MyError>{
+     fn draw(&mut self, f:&mut ratatui::Frame<'_>, rect: Rect, app:Arc<App>) ->Result<(),MyError>{
         let layout=Layout::new(
             Direction::Vertical,
-            [Constraint::Percentage(80), Constraint::Percentage(20)],
+            [Constraint::Percentage(70), Constraint::Percentage(30)],
         )
             .split(f.size());
 
@@ -40,8 +45,9 @@ impl Component for Home{
                                 .borders(Borders::ALL)).blue(), sub_layout[1]);
 
         //获取tracinglog struct实例
-        let mut tracinglog=self.get_logging();
-        tracinglog.draw(f,layout[1])?;
+        let mut log=self.log.clone();
+        let mut tracinglog=TracingLogComponent::new(log);
+        tracinglog.draw(f,layout[1],app)?;
         Ok(())
     }
     fn update(& mut self)->Result<(),MyError>{
