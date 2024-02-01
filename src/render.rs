@@ -1,6 +1,7 @@
 use std::num::IntErrorKind::NegOverflow;
 use std::sync::{Arc};
 use futures::future::ok;
+use ratatui::layout::{Constraint, Direction, Layout};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::Mutex;
 use tokio::task::{JoinHandle, spawn};
@@ -13,6 +14,7 @@ use crate::components::home::Home;
 use crate::tui::Tui;
 use crate::components::quit::Quit;
 use crate::error::MyError;
+use crate::tracing::TracingLog;
 
 
 pub struct Render {
@@ -40,45 +42,65 @@ impl Render {
     }
     //引用app的时候，render的run函数 无法知道 app 引用的生命周期是否能覆盖run的生命周期，只有在app run 中调用 render run才能保证app的生命周期
     //大于run（但是编译器不知道，也不能限制只能在app run 中调用 render run ）
-    pub  fn run(& mut self,app: Arc<App>) ->JoinHandle<Result<(), MyError>>{
+    pub  fn run(& mut self,app: Arc<App>,action_sender:UnboundedSender<Action>) ->JoinHandle<Result<(), MyError>>{
         let action_receiver = Arc::clone(&self.action_receiver);
         let tui = Arc::clone(&self.tui);
         let cancelation_token = self.cancelation_token.clone();
         let shared_data_clone = self.log_text.clone();
+
+
         // 将 app 参数移动到异步闭包中
         tokio::spawn(async move {
+            let mut home = Home::new(shared_data_clone.lock().await.clone());
+            let mut quit = Quit::new();
+            let mut tracinglog= crate::components::tracinglog::TracingLogComponent::new("".to_string());
+            tracinglog.register_action_handler(action_sender);
             while !cancelation_token.is_cancelled() {
                 while let act_recv = action_receiver.lock().await.recv().await {
+                    tracinglog.set_log(shared_data_clone.lock().await.clone());
+                    tracinglog.update(Some(Action::Down))?;//来一条消息，翻一条数据
                     match act_recv {
                         Some(Action::Render) => {
-                            let log_text = shared_data_clone.lock().await.clone();
-                            let mut home = Home::new(log_text);
-                            let mut quit = Quit::new();
-                            let app_clone=Arc::clone(&app);
+                            let  app_clone=Arc::clone(&app);
+                            info!("收到动作: {:?}", Action::Render);
 
-                            info!("receive action: {:?}", Action::Render);
-                         //   println!("开始绘制");
                                 tui.lock().await.terminal.draw(|frame| {
-                                   // println!("正在绘制");
-                                    home.draw(frame, frame.size(),app_clone).expect("绘制图形失败")
+                                    let layout=Layout::new(
+                                        Direction::Vertical,
+                                        [Constraint::Percentage(70), Constraint::Percentage(30)],
+                                    )
+                                        .split(frame.size());
+
+                                    let mut sub_layout=Layout::new(
+                                        Direction::Horizontal,
+                                        [Constraint::Percentage(25),Constraint::Percentage(75)],
+                                    ).split(layout[0]);
+                                    home.draw(frame, layout[0],).expect("绘制图形失败");
+                                    tracinglog.draw(frame,layout[1]).expect("绘制图形失败");
                                 })?;
 
                         }
                         Some(Action::Quit) => {
-                            let mut quit = Quit::new();
-                            let app_clone=Arc::clone(&app);
-                            info!("receive action: {:?}", Action::Quit);
+                            let  app_clone=Arc::clone(&app);
+                            info!("收到动作: {:?}", Action::Quit);
                             tui.lock().await.terminal.draw(|frame| {
-                                quit.draw(frame, frame.size(),app_clone).expect("绘制图形失败")
+                                quit.draw(frame, frame.size()).expect("绘制图形失败")
                             })?;
                         }
                         Some(Action::Tick) => {
-                            let mut quit = Quit::new();
-                            let app_clone=Arc::clone(&app);
-                            info!("receive action: {:?}", Action::Quit);
-                            tui.lock().await.terminal.draw(|frame| {
-                                quit.draw(frame, frame.size(),app_clone).expect("绘制图形失败")
-                            })?;
+
+                            info!("收到动作: {:?}", Action::Tick);
+                            // tui.lock().await.terminal.draw(|frame| {
+                            //     home.draw(frame, frame.size(),app_clone).expect("绘制图形失败")
+                            // })?;
+                           // tracinglog.update(Action::Tick)?;
+                           // println!("tracinglog scroll is {:?}",tracinglog.scroll);
+                        }
+                        Some(Action::Up)=>{
+                            tracinglog.update(Some(Action::Up))?;
+                        }
+                        Some(Action::Down)=>{
+
                         }
                         Some(_) => {
                             break

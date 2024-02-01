@@ -183,7 +183,7 @@ impl  EventHandler {
                     CrosstermEvent::Key(key) => {
                         if key.kind == KeyEventKind::Press {
                             event_tx.send(Event::Key(key)).unwrap();
-                            info!("send the event is {:?}\n", Event::Key(key));
+                            info!("发送事件 is {:?}\n", Event::Key(key));
                         }
                     },
                     CrosstermEvent::Mouse(mouse) => {
@@ -210,7 +210,7 @@ impl  EventHandler {
         let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
         let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 60.0));
         loop {
-            info!("进入循环  is {:?}",render_interval);
+
             let crossterm_event = reader.next().fuse();
             if cancellation_token.is_cancelled() {
                 break;
@@ -219,7 +219,7 @@ impl  EventHandler {
                     maybe_event=crossterm_event=> {
                         match  maybe_event{
                             Some(Ok(evt))=>{
-                                   info!("crossterm_event is {:?}",evt);
+                                   info!("发送事件成功");
                             Self::handle_crossterm_event(&event_tx, evt);
                             }
                             Some(Err(err)) => {
@@ -229,14 +229,14 @@ impl  EventHandler {
                         }
                     }
                      _ = tick_interval.tick() => {
-                      //  event_tx.send(Event::Tick).unwrap();
+                        event_tx.send(Event::Tick).unwrap();
                     },
                     _ = render_interval.tick() => {
                         event_tx.send(Event::Render).unwrap();
                         //println!("render is  tick");
                     },
                 }
-            info!("退出select");
+
         }
 
     }

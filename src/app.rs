@@ -128,7 +128,7 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
         eprintln!("Failed to set global default subscriber: {}", e);
         MyError::InitializationError
     })?;
-    info!("初始化成功");
+    info!("初始化日志成功");
 
    // println!("log_text is {:?}",log_text.lock().await);
    // app.log_text=text;
@@ -170,7 +170,7 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     // info!("初始化成功！");
     // println!("初始化成功！\n");
     //把通道接收端，发送端传递给 reactor 和render
-    let mut reactor=ActionReactor::new(action_sender,event_receiver);
+    let mut reactor=ActionReactor::new(action_sender.clone(),event_receiver);
     let mut render=Render::new(action_receiver, tui,logs);
 
     //join handle,等待异步handle 执行完任务，才退出主流程，不然主流程会执行完就退出了
@@ -180,7 +180,7 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
         _) = tokio::join!(
             handler.run(app.tick_rate, app.frame_rate),
             reactor.run(),
-            render.run(Arc::new(app)),
+            render.run(Arc::new(app),action_sender.clone()),
             recv_handle,
 );
 

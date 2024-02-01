@@ -39,6 +39,10 @@ pub enum Action {
     ExitProcessing,
     Update,
     None,
+    Down,
+    Up,
+    Left,
+    Right,
 }
 //事件的reactor
 pub struct ActionReactor {
@@ -100,8 +104,27 @@ impl ActionReactor {
                                 if let Err(err) = action_sender.send(Action::Quit) {
                                     info!("Error sending action: {:?}", err);
                                 } else {
+                                     last_tick_key_events_react.drain(..);//存入时，先清空数组
                                     last_tick_key_events_react.push(Action::Quit);
-                                    info!("Sent action: {:?}", Action::Quit);
+                                    info!("发送动作: {:?}", Action::Quit);
+                                }
+                            }
+                            KeyCode::Char('i') => {
+                                if let Err(err) = action_sender.send(Action::Up) {
+                                    info!("Error sending action: {:?}", err);
+                                } else {
+                                     last_tick_key_events_react.drain(..);//清空数组
+                                    last_tick_key_events_react.push(Action::Up);
+                                    info!("发送动作: {:?}", Action::Up);
+                                }
+                            }
+                            KeyCode::Char('k') => {
+                                if let Err(err) = action_sender.send(Action::Down) {
+                                    info!("Error sending action: {:?}", err);
+                                } else {
+                                     last_tick_key_events_react.drain(..);//清空数组
+                                    last_tick_key_events_react.push(Action::Down);
+                                    info!("发送动作: {:?}", Action::Down);
                                 }
                             }
                             _ => (),
@@ -116,14 +139,20 @@ impl ActionReactor {
                         }
                     }
                     Some(Event::Tick)=>{
+                        //发送上一次的action ，即重新刷新一遍动作
                         //   if let Some(last_react) = last_tick_key_events_react.last().cloned()
                         // {
+                        //    // println!(" sending action: {:?}", last_react);
                         //     if let Err(err) = action_sender.send(last_react.clone()) {
-                        //         println!("Error sending action: {:?}", err);
+                        //     //    println!("Error sending action: {:?}", err);
                         //     } else {
-                        //         last_tick_key_events_react.drain(..);//清空数组
-                        //         println!("Sent action: {:?}", Action::Tick);
+                        //
+                        //     //    println!("Sent action: {:?}", Action::Tick);
                         //     }
+                        // }
+                        //发送tick action 去触发render tick的update 分支
+                        // if let Err(err) = action_sender.send(Action::Tick) {
+                        //     println!("Error sending action: {:?}", err);
                         // }
                     }
                     None => {

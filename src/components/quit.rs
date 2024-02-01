@@ -3,6 +3,7 @@ use futures::future::ok;
 use ratatui::{prelude::*, widgets::*};
 use ratatui::prelude::Direction::Vertical;
 use tokio::sync::Mutex;
+use crate::action::Action;
 use crate::app::App;
 use crate::error::MyError;
 use super::Component;
@@ -19,7 +20,7 @@ impl Quit{
 }
 
 impl Component for Quit{
-    fn draw(&mut self, f: &mut Frame<'_>, rect: Rect,app:Arc<App>) -> Result<(), MyError> {
+    fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) -> Result<(), MyError> {
         f.render_widget(Clear, f.size());
         let exit_block=Block::default()
             .title("Y/N")
@@ -34,7 +35,7 @@ impl Component for Quit{
         f.render_widget(exit_paragraph,area);
         Ok(())
     }
-    fn update(&mut self) -> Result<(), MyError> {
+    fn update(&mut self,action:Option<Action>) -> Result<(), MyError> {
         Ok(())
     }
 }
