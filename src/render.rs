@@ -1,6 +1,5 @@
-use std::num::IntErrorKind::NegOverflow;
+
 use std::sync::{Arc};
-use futures::future::ok;
 use ratatui::layout::{Constraint, Direction, Layout};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::Mutex;
@@ -14,7 +13,7 @@ use crate::components::home::Home;
 use crate::tui::Tui;
 use crate::components::quit::Quit;
 use crate::error::MyError;
-use crate::tracing::TracingLog;
+use crate::file::FileList;
 
 
 pub struct Render {
@@ -47,6 +46,7 @@ impl Render {
         let tui = Arc::clone(&self.tui);
         let cancelation_token = self.cancelation_token.clone();
         let shared_data_clone = self.log_text.clone();
+        let mut filelist=FileList::new();
 
 
         // 将 app 参数移动到异步闭包中
@@ -54,10 +54,18 @@ impl Render {
             let mut home = Home::new(shared_data_clone.lock().await.clone());
             let mut quit = Quit::new();
             let mut tracinglog= crate::components::tracinglog::TracingLogComponent::new("".to_string());
-            tracinglog.register_action_handler(action_sender);
+            let mut playzone=crate::components::playzone::PlayZone::new();
+            //读取文件列表
+            let mut filelist=FileList::new();
+            filelist.load_filelist().await?;
+            let filelistname=filelist.get_file_list();
+            let mut filelist=crate::components::filelist::FileListComponent::new(filelistname);
+
+            tracinglog.register_action_handler(action_sender.clone());//设置日志动作发送器，用来自动滚屏
+            filelist.register_action_handler(action_sender.clone());//设置文件动作发送器，用来触发update
             while !cancelation_token.is_cancelled() {
                 while let act_recv = action_receiver.lock().await.recv().await {
-                    tracinglog.set_log(shared_data_clone.lock().await.clone());
+                    tracinglog.set_log(shared_data_clone.lock().await.clone());//读取日志
                     tracinglog.update(Some(Action::Down))?;//来一条消息，翻一条数据
                     match act_recv {
                         Some(Action::Render) => {
@@ -75,8 +83,10 @@ impl Render {
                                         Direction::Horizontal,
                                         [Constraint::Percentage(25),Constraint::Percentage(75)],
                                     ).split(layout[0]);
-                                    home.draw(frame, layout[0],).expect("绘制图形失败");
+                                  //  home.draw(frame, layout[0],).expect("绘制图形失败");
                                     tracinglog.draw(frame,layout[1]).expect("绘制图形失败");
+                                    filelist.draw(frame,sub_layout[0]).expect("绘制图形失败");
+                                    playzone.draw(frame,sub_layout[1]).expect("绘制图形失败");
                                 })?;
 
                         }
@@ -89,7 +99,7 @@ impl Render {
                         }
                         Some(Action::Tick) => {
 
-                            info!("收到动作: {:?}", Action::Tick);
+                           // info!("收到动作: {:?}", Action::Tick);
                             // tui.lock().await.terminal.draw(|frame| {
                             //     home.draw(frame, frame.size(),app_clone).expect("绘制图形失败")
                             // })?;
@@ -97,10 +107,11 @@ impl Render {
                            // println!("tracinglog scroll is {:?}",tracinglog.scroll);
                         }
                         Some(Action::Up)=>{
-                            tracinglog.update(Some(Action::Up))?;
+                            //tracinglog.update(Some(Action::Up))?;
+                            filelist.update(Some(Action::Up))?
                         }
                         Some(Action::Down)=>{
-
+                            filelist.update(Some(Action::Down))?
                         }
                         Some(_) => {
                             break

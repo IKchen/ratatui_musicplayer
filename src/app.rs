@@ -14,9 +14,10 @@ use crate::error::MyError;
 use crate:: tui::Tui;
 use crate::components::home::Home;
 use crate::components::Component;
-use crate::event;
+use crate::{event, file};
 use crate::action::ActionReactor;
 use crate::action::Action;
+use crate::file::FileList;
 use crate::render::Render;
 use crate::tracing::{recv_log, TracingLog};
 pub struct App{
@@ -122,13 +123,13 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     let (recv_handle) =recv_log(log_receiver,Arc::clone(&logs));
 
     let subscriber = tracing_subscriber::Registry::default().with(log);
-    println!("Subscriber initialized: {:?}", subscriber);
+    //println!("Subscriber initialized: {:?}", subscriber);
     // 全局的subscriber 只能有一个
     tracing::subscriber::set_global_default(subscriber).map_err(|e| {
         eprintln!("Failed to set global default subscriber: {}", e);
         MyError::InitializationError
     })?;
-    info!("初始化日志成功");
+    //info!("初始化日志成功");
 
    // println!("log_text is {:?}",log_text.lock().await);
    // app.log_text=text;
@@ -141,8 +142,10 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     let mut tui = Tui::new()?;
     let mut handler=event::EventHandler::new(event_sender);
 
-
-
+    // let mut filelist=FileList::new();
+    // filelist.load_filelist().await?;
+    // let filelistname=filelist.get_file_list();
+    //println!("filelistname is {:?}",filelistname);
     // let logs=Arc::new(std::sync::Mutex::new(Vec::new()));
     // let vec_sampler = TracingLog {
     //     logs: Arc::clone(&logs),

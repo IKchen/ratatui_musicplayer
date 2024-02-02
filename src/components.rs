@@ -10,7 +10,10 @@ use crate::tracing::TracingLog;
 pub mod home;
 
 pub mod quit;
-pub(crate) mod tracinglog;
+pub mod tracinglog;
+pub mod filelist;
+pub(crate) mod playzone;
+
 
 pub trait Component{
 

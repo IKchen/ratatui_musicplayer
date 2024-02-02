@@ -37,6 +37,7 @@ pub enum Action {
     EnterInsert,
     EnterProcessing,
     ExitProcessing,
+    Selected,
     Update,
     None,
     Down,
@@ -140,16 +141,16 @@ impl ActionReactor {
                     }
                     Some(Event::Tick)=>{
                         //发送上一次的action ，即重新刷新一遍动作
-                        //   if let Some(last_react) = last_tick_key_events_react.last().cloned()
-                        // {
-                        //    // println!(" sending action: {:?}", last_react);
-                        //     if let Err(err) = action_sender.send(last_react.clone()) {
-                        //     //    println!("Error sending action: {:?}", err);
-                        //     } else {
-                        //
-                        //     //    println!("Sent action: {:?}", Action::Tick);
-                        //     }
-                        // }
+                          if let Some(last_react) = last_tick_key_events_react.last().cloned()
+                        {
+                           // println!(" sending action: {:?}", last_react);
+                            if let Err(err) = action_sender.send(last_react.clone()) {
+                            //    println!("Error sending action: {:?}", err);
+                            } else {
+
+                            //    println!("Sent action: {:?}", Action::Tick);
+                            }
+                        }
                         //发送tick action 去触发render tick的update 分支
                         // if let Err(err) = action_sender.send(Action::Tick) {
                         //     println!("Error sending action: {:?}", err);

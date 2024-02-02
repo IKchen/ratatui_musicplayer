@@ -1,6 +1,5 @@
 use std::sync::{Arc};
 use ratatui::{prelude::*, widgets::*};
-use ratatui::prelude::Direction::Vertical;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::Mutex;
 use tracing::info;

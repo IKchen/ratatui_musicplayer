@@ -6,6 +6,7 @@ mod app;
 mod action;
 mod render;
 mod tracing;
+mod file;
 //mod config;
 
 use crate::components::Component;
