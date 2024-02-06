@@ -208,7 +208,7 @@ impl  EventHandler {
     pub async  fn select_test(cancellation_token: CancellationToken,event_tx:UnboundedSender<Event>){
         let mut reader = crossterm::event::EventStream::new();
         let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
-        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 6.0));
+        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 60.0));
         loop {
 
             let crossterm_event = reader.next().fuse();
@@ -219,7 +219,6 @@ impl  EventHandler {
                     maybe_event=crossterm_event=> {
                         match  maybe_event{
                             Some(Ok(evt))=>{
-                                   info!("发送事件成功");
                             Self::handle_crossterm_event(&event_tx, evt);
                             }
                             Some(Err(err)) => {
@@ -229,10 +228,10 @@ impl  EventHandler {
                         }
                     }
                      _ = tick_interval.tick() => {
-                        event_tx.send(Event::Tick).unwrap();
+                     //   event_tx.send(Event::Tick).unwrap();
                     },
                     _ = render_interval.tick() => {
-                        event_tx.send(Event::Render).unwrap();
+                     //   event_tx.send(Event::Render).unwrap();
                         //println!("render is  tick");
                     },
                 }

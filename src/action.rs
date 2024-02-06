@@ -107,7 +107,7 @@ impl ActionReactor {
                                 } else {
                                      last_tick_key_events_react.drain(..);//存入时，先清空数组
                                     last_tick_key_events_react.push(Action::Quit);
-                                    info!("发送动作: {:?}", Action::Quit);
+                                    info!("发送动作: Action::Quit", );
                                 }
                             }
                             KeyCode::Char('i') => {
@@ -116,7 +116,7 @@ impl ActionReactor {
                                 } else {
                                      last_tick_key_events_react.drain(..);//清空数组
                                     last_tick_key_events_react.push(Action::Up);
-                                    info!("发送动作: {:?}", Action::Up);
+                                    info!("发送动作: Action::Up");
                                 }
                             }
                             KeyCode::Char('k') => {
@@ -125,7 +125,7 @@ impl ActionReactor {
                                 } else {
                                      last_tick_key_events_react.drain(..);//清空数组
                                     last_tick_key_events_react.push(Action::Down);
-                                    info!("发送动作: {:?}", Action::Down);
+                                    info!("发送动作: Aciton::Down");
                                 }
                             }
                             _ => (),
@@ -141,16 +141,16 @@ impl ActionReactor {
                     }
                     Some(Event::Tick)=>{
                         //发送上一次的action ，即重新刷新一遍动作
-                          if let Some(last_react) = last_tick_key_events_react.last().cloned()
-                        {
-                           // println!(" sending action: {:?}", last_react);
-                            if let Err(err) = action_sender.send(last_react.clone()) {
-                            //    println!("Error sending action: {:?}", err);
-                            } else {
-
-                            //    println!("Sent action: {:?}", Action::Tick);
-                            }
-                        }
+                        //   if let Some(last_react) = last_tick_key_events_react.last().cloned()
+                        // {
+                        //    // println!(" sending action: {:?}", last_react);
+                        //     if let Err(err) = action_sender.send(last_react.clone()) {
+                        //     //    println!("Error sending action: {:?}", err);
+                        //     } else {
+                        //
+                        //     //    println!("Sent action: {:?}", Action::Tick);
+                        //     }
+                        // }
                         //发送tick action 去触发render tick的update 分支
                         // if let Err(err) = action_sender.send(Action::Tick) {
                         //     println!("Error sending action: {:?}", err);

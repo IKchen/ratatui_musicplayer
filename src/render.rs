@@ -67,10 +67,9 @@ impl Render {
                 while let act_recv = action_receiver.lock().await.recv().await {
                     tracinglog.set_log(shared_data_clone.lock().await.clone());//读取日志
                     tracinglog.update(Some(Action::Down))?;//来一条消息，翻一条数据
+                  //  info!("收到动作: {:?}",Some(act_recv.clone()));
                     match act_recv {
                         Some(Action::Render) => {
-                            let  app_clone=Arc::clone(&app);
-                            info!("收到动作: {:?}", Action::Render);
 
                                 tui.lock().await.terminal.draw(|frame| {
                                     let layout=Layout::new(
@@ -92,7 +91,7 @@ impl Render {
                         }
                         Some(Action::Quit) => {
                             let  app_clone=Arc::clone(&app);
-                            info!("收到动作: {:?}", Action::Quit);
+                          //  info!("收到动作: {:?}", Action::Quit);
                             tui.lock().await.terminal.draw(|frame| {
                                 quit.draw(frame, frame.size()).expect("绘制图形失败")
                             })?;

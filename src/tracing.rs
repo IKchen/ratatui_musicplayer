@@ -75,7 +75,6 @@ pub  fn recv_log(log_receiver:  UnboundedReceiver<String>, text: Arc<Mutex<Strin
     //let text = Arc::new(Mutex::new(String::new()));
     let logs = Arc::new(Mutex::new(Vec::new()));
     let mut log_receiver=log_receiver;
-    let text_clone = Arc::clone(&text);
     let logs_clone = Arc::clone(&logs);
 
     let handle = tokio::spawn(async move {
