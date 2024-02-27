@@ -16,3 +16,5 @@ log = "0.4.20"
 futures = "0.3.29"
 serde = "1.0.193"
 tokio-stream= { version = "0.1.14", features = [] }
+rodio = "0.17.3"
+rustfft = "6.2.0"

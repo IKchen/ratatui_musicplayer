@@ -9,6 +9,7 @@ mod tracing;
 mod file;
 //mod config;
 
+use std::f32::consts::PI;
 use crate::components::Component;
 use std::io::Write;
 // use tracing::{Event, event as logevent, Level, Subscriber};
@@ -17,54 +18,95 @@ use std::io::Write;
 use app::App;
 use crate::app::runner;
 use crate::error::MyError;
-
+use rodio::{Decoder, OutputStream, Sink, Source};
+use rustfft::num_complex::Complex;
+use rustfft::FftPlanner;
+use std::fs::File;
+use std::io::BufReader;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use rustfft::num_traits::ToPrimitive;
 
 //自定义类型别名,避免类型名称过长
 pub type CrosstermTerminal<W> = ratatui::Terminal<ratatui::backend::CrosstermBackend<W>>;
 
-#[tokio::main]
-async fn main()->Result<(),MyError>{
 
+ fn main()->Result<(),MyError>{
 
-   // let subscriber = tracing_subscriber::registry().with(logger);
- //   tracing::subscriber::set_global_default(subscriber).expect("设置订阅者失败");
-    let mut app=App::new();
+     // 定义汉宁窗函数
+     fn hanning_window(length: usize) -> Vec<f32> {
+         (0..length).map(|i| 0.5 - 0.5 * (2.0 * PI * i as f32 / (length - 1) as f32).cos()).collect()
+     }
+
+     // let mut app=App::new();
    // app.run().await?;
-    runner(app).await?;
- //    let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
- //    let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 60.0));
- //    let mut cancelation_token = CancellationToken::new();
- //    let start_time = Instant::now();
- //    loop {
- //        let current_time = Instant::now();
- //        //  let crossterm_event =  futures::StreamExt::next(&mut reader).fuse();
- //        if cancelation_token.is_cancelled() {
- //            println!("is_cancelled is cancelled");
- //            break;
- //        }
- //        let elapsed_time = current_time - start_time;
- //        if elapsed_time >= Duration::from_secs(5) {
- //            println!("is_cancelled is 准备取消1" );
- //            cancelation_token.cancel();
- //
- //        }
- //        tokio::select! {
- //
- //                    _ = tick_interval.tick()=> {
- //                                println!("tick_interval is {:?}", tick_interval);
- //
- //                    }
- //                    _ = render_interval.tick()=> {
- //                        // 处理渲染逻辑
- //                                println!("render_interval is {:?}", render_interval);
- //                    }
- //                }
- //
- //    }
+  //  runner(app).await?;
 
+    // 设置音频输出流和解码器
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let file = File::open("music/music1.mp3").expect("文件路径有问题");
+    let buf_reader = BufReader::new(file);
+    let mut source = Decoder::new(buf_reader).unwrap();
+     let sink = Sink::try_new(&stream_handle).unwrap();
+    //sink.append(source);
+
+    //FFT 设置
+    let mut planner = FftPlanner::new();
+    let fft = planner.plan_fft_forward(1024); // 假设使用 1024 点 FFT
+    let fft_buffer = Arc::new(Mutex::new(vec![Complex::new(0.0, 0.0); 1024]));
+    let fft_buffer_clone = Arc::clone(&fft_buffer);
+    //stream_handle.play_raw(source.convert_samples::<f32>()).unwrap();
+    // 创建缓冲区，用于存储采集的音频数据
+     let mut audio_buffer = Vec::<f32>::with_capacity(1024);// 使用 with_capacity 来避免额外分配
+     let mut window = hanning_window(1024);
+     for sample in source{
+
+         // 将样本与汉宁窗进行逐元素相乘
+         let windowed_sample = (sample as f32) * 1.0;
+       //  println!("window[0]: {}, windowed_sample: {}", window[0], windowed_sample);
+         audio_buffer.push(windowed_sample );
+
+         if audio_buffer.len() >= 1024 {
+             let mut complex_samples: Vec<Complex<f32>> = audio_buffer.iter().map(|&sample| Complex::new(sample, 0.0)).collect();
+             fft.process(complex_samples.as_mut_slice());
+             let magnitude_buffer: Vec<i32> = complex_samples.iter()
+                 .map(|&c| c.norm() as i32) // 计算模并转换为 i32
+                 .collect();
+             println!("模是: {:?}", magnitude_buffer);
+             // 清空缓冲区，准备下一轮数据
+             audio_buffer.clear();
+         }
+     }
+
+    // 播放音频并实时捕获样本
+    // stream_handle.play_raw(source.convert_samples::<f32>().map(move |sample| {
+    //
+    //     let mut fft_buffer = fft_buffer_clone.lock().unwrap();
+    //     fft_buffer.rotate_left(1);
+    //     fft_buffer[1023] = Complex::new(sample, 0.0); // 假设是单声道音频
+    //
+    //     // FFT 数据准备好后执行 FFT
+    //     if fft_buffer.iter().filter(|&&c| c != Complex::new(0.0, 0.0)).count() == 1024 {
+    //         let mut output_buffer = vec![Complex::new(0.0, 0.0); 1024];
+    //         fft.process(&mut output_buffer);
+    //
+    //         // 在这里处理 FFT 结果，比如更新音频可视化等
+    //         // 假设 output_buffer 包含 FFT 的输出
+    //         let output_buffer: Vec<Complex<f32>> = vec![Complex::new(0.0, 0.0); 1024]; // 示例数据
+    //
+    //         // 转换为幅度并存储为 i32
+    //         let magnitude_buffer: Vec<i32> = output_buffer.iter()
+    //             .map(|&c| c.norm() as i32) // 计算模并转换为 i32
+    //             .collect();
+    //         println!("模是: {:?}",magnitude_buffer);
+    //     }
+    //
+    //     sample // 确保音频继续播放
+    // })).unwrap();
+    std::thread::sleep(Duration::from_secs(20.to_u64().unwrap()));//等待播放完成
     Ok(())
 }
-//----------------------------------------
+//-----------------测试日志滚动-----------------------
 // use std::{error::Error, io, time::{Duration, Instant}, vec};
 // use std::io::BufRead;
 //

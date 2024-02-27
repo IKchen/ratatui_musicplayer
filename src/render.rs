@@ -8,6 +8,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 use crate::action::Action;
 use crate::app::App;
+use crate::components::analysis::Analysis;
 use crate::components::Component;
 use crate::components::home::Home;
 use crate::tui::Tui;
@@ -60,7 +61,7 @@ impl Render {
             filelist.load_filelist().await?;
             let filelistname=filelist.get_file_list();
             let mut filelist=crate::components::filelist::FileListComponent::new(filelistname);
-
+            let mut analysis=Analysis::new();
             tracinglog.register_action_handler(action_sender.clone());//设置日志动作发送器，用来自动滚屏
             filelist.register_action_handler(action_sender.clone());//设置文件动作发送器，用来触发update
             while !cancelation_token.is_cancelled() {
@@ -75,17 +76,21 @@ impl Render {
                                     let layout=Layout::new(
                                         Direction::Vertical,
                                         [Constraint::Percentage(70), Constraint::Percentage(30)],
-                                    )
-                                        .split(frame.size());
+                                    ).split(frame.size());
 
                                     let mut sub_layout=Layout::new(
                                         Direction::Horizontal,
                                         [Constraint::Percentage(25),Constraint::Percentage(75)],
                                     ).split(layout[0]);
+                                    let mut music_layou=Layout::new(
+                                        Direction::Vertical,
+                                        [Constraint::Percentage(40), Constraint::Percentage(60)],
+                                    ).split(sub_layout[1]);
                                   //  home.draw(frame, layout[0],).expect("绘制图形失败");
                                     tracinglog.draw(frame,layout[1]).expect("绘制图形失败");
                                     filelist.draw(frame,sub_layout[0]).expect("绘制图形失败");
                                     playzone.draw(frame,sub_layout[1]).expect("绘制图形失败");
+                                    analysis.draw(frame,music_layou[1]).expect("绘制图形失败");
                                 })?;
 
                         }

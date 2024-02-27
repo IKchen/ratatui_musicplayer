@@ -12,7 +12,8 @@ pub mod home;
 pub mod quit;
 pub mod tracinglog;
 pub mod filelist;
-pub(crate) mod playzone;
+pub mod playzone;
+pub mod analysis;
 
 
 pub trait Component{

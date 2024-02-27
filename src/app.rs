@@ -131,8 +131,6 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     })?;
     //info!("初始化日志成功");
 
-   // println!("log_text is {:?}",log_text.lock().await);
-   // app.log_text=text;
 
     // 创建 EventHandler 和 ActionReactor 之间的通道
     let (event_sender, event_receiver) = mpsc::unbounded_channel();
