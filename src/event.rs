@@ -228,11 +228,11 @@ impl  EventHandler {
                         }
                     }
                      _ = tick_interval.tick() => {
-                     //   event_tx.send(Event::Tick).unwrap();
+                      //  event_tx.send(Event::Tick).unwrap();
                     },
                     _ = render_interval.tick() => {
-                     //   event_tx.send(Event::Render).unwrap();
-                        //println!("render is  tick");
+                       event_tx.send(Event::Render).unwrap();
+                    //    println!("render is  tick");
                     },
                 }
 

@@ -95,7 +95,6 @@ impl Component for TracingLogComponent{
          f.render_widget(list, layout[0]);
          Ok(())
     }
-    //这个update 有点问题，数据滚动需要判断如果触底了，就不要重复滚动了
     fn update(& mut self, action: Option<Action>) ->Result<(),MyError>{
         match action {
             Some(Action::Quit)=> return Ok(()),

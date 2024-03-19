@@ -71,8 +71,9 @@ impl<S> Layer<S> for TracingLog
 
     }
 }
+//接收tracing产生的日志数据，并存到一个text 里面
 pub  fn recv_log(log_receiver:  UnboundedReceiver<String>, text: Arc<Mutex<String>> ) ->(JoinHandle<()>) {
-    //let text = Arc::new(Mutex::new(String::new()));
+
     let logs = Arc::new(Mutex::new(Vec::new()));
     let mut log_receiver=log_receiver;
     let logs_clone = Arc::clone(&logs);
@@ -82,7 +83,6 @@ pub  fn recv_log(log_receiver:  UnboundedReceiver<String>, text: Arc<Mutex<Strin
             // 在这里处理日志
             let mut logs = logs_clone.lock().await;
             logs.push(log);
-        //    let mut text = text.lock().unwrap();
             *text.lock().await= logs.join("\n");
           //  println!("text in task is {:?}",*text.lock().await)
         }
