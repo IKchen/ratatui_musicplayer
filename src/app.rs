@@ -150,7 +150,10 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     let (sample_sender,samole_receiver)=mpsc::unbounded_channel();
     let mut musicplayer=MusicPlayer::new("music/music1.mp3".to_string(),sample_sender);
     let mut action_sender_clone=action_sender.clone();
-
+    //音乐进度初始化
+    let mut total_time=musicplayer.get_music_duration();
+    let mut achive_duration=Arc::new(Mutex::new(Duration::from_secs(0)));
+    //fft处理
     let mut fft_controller=FFTController::new("music/music1.mp3".to_string(),44100.0,4096,samole_receiver,music_tx,action_sender_clone);
     let mut fft_result_buffer=Arc::new(Mutex::new(Vec::new()));
     let fft_result_set_handle=get_fft_result(music_reciver,Arc::clone(&fft_result_buffer));
@@ -196,7 +199,7 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
         _) = tokio::join!(
             handler.run(app.tick_rate, app.frame_rate),
             reactor.run(),
-            render.run(Arc::new(app),action_sender.clone(),Arc::clone(&fft_result_buffer)),
+            render.run(Arc::new(app),action_sender.clone(),Arc::clone(&fft_result_buffer),total_time),
             recv_handle,//异步获取tracing 日志
            musicplayer.play(),
             fft_controller.start_process(),

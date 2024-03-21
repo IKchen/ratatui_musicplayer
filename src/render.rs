@@ -2,6 +2,7 @@
 use std::sync::{Arc};
 use std::sync::mpsc::Receiver;
 use std::thread;
+use std::time::Duration;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -46,7 +47,7 @@ impl Render {
     }
     //引用app的时候，render的run函数 无法知道 app 引用的生命周期是否能覆盖run的生命周期，只有在app run 中调用 render run才能保证app的生命周期
     //大于run（但是编译器不知道，也不能限制只能在app run 中调用 render run ）
-    pub  fn run(& mut self, app: Arc<App>, action_sender:UnboundedSender<Action>, fft_result: Arc<Mutex<Vec<(String, u64)>>>) ->JoinHandle<Result<(), MyError>>{
+    pub  fn run(& mut self, app: Arc<App>, action_sender:UnboundedSender<Action>, fft_result: Arc<Mutex<Vec<(String, u64)>>>,total_duration:u64) ->JoinHandle<Result<(), MyError>>{
         let action_receiver = Arc::clone(&self.action_receiver);
         let tui = Arc::clone(&self.tui);
         let cancelation_token = self.cancelation_token.clone();
@@ -58,8 +59,8 @@ impl Render {
         //读取文件列表
         let mut filelist=FileList::new();
         let mut analysis=Analysis::new(action_sender.clone());
-
-
+        let mut muiscprogress=crate::components::musicprogress::MusicProgress::new();
+        let mut lyric=crate::components::lyric::LyricZone::new();
         // 将 app 参数移动到异步闭包中
         tokio::spawn(async move {
 
@@ -68,8 +69,9 @@ impl Render {
             let mut filelist=crate::components::filelist::FileListComponent::new(filelistname);
             tracinglog.register_action_handler(action_sender.clone());//设置日志动作发送器，用来自动滚屏
             filelist.register_action_handler(action_sender.clone());//设置文件动作发送器，用来触发update
+            muiscprogress.start_count();
 
-
+            muiscprogress.get_duration(total_duration);
             // while !cancelation_token.is_cancelled(){
             //     tokio::select! {
             //         act_recv = action_receiver.lock().await.recv().await=>{
@@ -161,7 +163,10 @@ impl Render {
                     tracinglog.set_log(shared_data_clone.lock().await.clone());//读取日志
                     tracinglog.update(Some(Action::Down))?;//来一条消息，翻一条数据
                     analysis.set_data(fft_result.lock().await.clone());
+                    muiscprogress.set_count();
                   //  analysis.get_fft_result().await;//还没处理完，一直在处理，所以绘制不了图形
+                 //   info!("achive_duration is {:?}:?",muiscprogress.achive_duration.as_secs());
+                  info!("progress is {:?}:?",muiscprogress.progress);
                     match act_recv {
                         Some(Action::Render) => {
                                 tui.lock().await.terminal.draw(|frame| {
@@ -176,16 +181,21 @@ impl Render {
                                         Direction::Horizontal,
                                         [Constraint::Percentage(25),Constraint::Percentage(75)],
                                     ).split(layout[0]);
-                                    let mut music_layou=Layout::new(
-                                        Direction::Vertical,
-                                        [Constraint::Percentage(40), Constraint::Percentage(60)],
+                                    let mut fft_layout=Layout::new(
+                                        Direction::Horizontal,
+                                        [Constraint::Percentage(45), Constraint::Percentage(55)],
                                     ).split(sub_layout[1]);
-
+                                    let mut playzone_layout=Layout::new(
+                                        Direction::Vertical,
+                                        [Constraint::Max(3), Constraint::Min(5),Constraint::Max(3)],
+                                    ).split(fft_layout[0]);
 
                                     tracinglog.draw(frame,layout[1]).expect("绘制图形失败");
                                     filelist.draw(frame,sub_layout[0]).expect("绘制图形失败");
-                                    playzone.draw(frame,sub_layout[1]).expect("绘制图形失败");
-                                    analysis.draw(frame,music_layou[1]).expect("绘制图形失败");
+                                    playzone.draw(frame,playzone_layout[0]).expect("绘制图形失败");
+                                    muiscprogress.draw(frame,playzone_layout[2]).expect("绘制图形失败");
+                                    lyric.draw(frame,playzone_layout[1]).expect("绘制图形失败");
+                                    analysis.draw(frame,fft_layout[1]).expect("绘制图形失败");
 
                                     analysis.clear_data();
                                 })?;
@@ -233,27 +243,3 @@ impl Render {
     }
 }
 
-// pub fn draw_main_layout<B>(f: &mut Frame){
-//     let layout=Layout::new(
-//         Direction::Vertical,
-//         [Constraint::Percentage(70), Constraint::Percentage(30)],
-//     ).split(f.size());
-//
-//     let mut sub_layout=Layout::new(
-//         Direction::Horizontal,
-//         [Constraint::Percentage(25),Constraint::Percentage(75)],
-//     ).split(layout[0]);
-//     let mut music_layou=Layout::new(
-//         Direction::Vertical,
-//         [Constraint::Percentage(40), Constraint::Percentage(60)],
-//     ).split(sub_layout[1]);
-//
-//
-//     tracinglog.draw(f,layout[1]).expect("绘制图形失败");
-//     filelist.draw(f,sub_layout[0]).expect("绘制图形失败");
-//     playzone.draw(f,sub_layout[1]).expect("绘制图形失败");
-//     analysis.draw(f,music_layou[1]).expect("绘制图形失败");
-// }
-// pub fn draw_tracinglog<B>(f: &mut Frame){
-//     tracinglog.draw(f,layout[1]).expect("绘制图形失败");
-// }

@@ -6,20 +6,20 @@ use crate::action::Action;
 use crate::components::Component;
 use crate::error::MyError;
 
-pub struct PlayZone{
+pub struct LyricZone{
     pub process: u32,
 }
-impl PlayZone{
+impl LyricZone{
     pub fn new()->Self{
         let process=0;
         Self{process}
     }
 }
-impl Component for PlayZone{
+impl Component for LyricZone{
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) -> Result<(), MyError> {
-        let paragraph=Paragraph::new("播放信息")
+        let paragraph=Paragraph::new("歌词")
             .block( Block::new()
-                .title("播放信息").red()
+                .title("歌词").red()
                 .borders(Borders::ALL)).blue();
         f.render_widget(paragraph,rect);
         Ok(())

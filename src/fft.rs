@@ -160,7 +160,7 @@ impl FFTController
              for ((name, value), new_value) in fft_buffer_clone.lock().await.iter_mut().zip(fft_result.iter()) {
                  *value = *new_value as u64; // 将第一个数组中的值替换为第二个数组的值
              }
-             //  println!("data is {:?}",self.data);
+            //   println!("data is {:?}",fft_result_buffer);
          }
      });
 

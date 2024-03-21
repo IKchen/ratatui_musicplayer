@@ -23,6 +23,7 @@ use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
 use std::fs::File;
 use std::io::BufReader;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
@@ -42,11 +43,9 @@ pub type CrosstermTerminal<W> = ratatui::Terminal<ratatui::backend::CrosstermBac
      fn hanning_window(length: usize) -> Vec<f32> {
          (0..length).map(|i| 0.5 - 0.5 * (2.0 * PI * i as f32 / (length - 1) as f32).cos()).collect()
      }
-     let mut app=App::new();
-
-
+    let mut app=App::new();
     runner(app).await?;
-    //tokio::join!(musicplayer.play());
+
 
     Ok(())
 }

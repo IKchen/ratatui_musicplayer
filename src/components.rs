@@ -14,6 +14,8 @@ pub mod tracinglog;
 pub mod filelist;
 pub mod playzone;
 pub mod analysis;
+pub mod musicprogress;
+pub mod lyric;
 
 
 pub trait Component{
