@@ -42,47 +42,24 @@ impl Component for TracingLogComponent{
      fn draw(&mut self, f:&mut ratatui::Frame<'_>, rect: Rect) ->Result<(),MyError>{
         // 这里我们使用克隆的Arc来访问日志
       //  let app_clone =Arc::clone(&app);
+         let layout=Layout::new( Direction::Vertical,
+                                 [Constraint::Percentage(100)],).split(rect);
         let text = self.logs.clone();
          let lines: Vec<String> = text.lines().map(|line| line.to_string()).collect();//将string 转化为vec
-         let mut list_item:Vec<ListItem>=lines.iter().rev().map(
+         let mut list_item:Vec<ListItem>=lines.iter().rev().map(//rev（）是倒序
              | log|{ListItem::new(
                  Line::from(vec![log.into()])
              ).green()}
          ).collect();
 
-         //for循环是顺序放进去，rev（）是倒序
-         // for log_item in lines{
-         //     let line=Line::from(log_item);
-         //     list_item.push(line);
-         // }
-        // self.vertical_scroll_state = self.vertical_scroll_state.content_length(text.len());
-        let layout=Layout::new(
-            Direction::Vertical,
-            [Constraint::Percentage(100)],
-        )
-            .split(rect);
-      //  info!("绘制图形");
-      //   self.height=layout[0].height;
-      //   f.render_widget(Paragraph::new(text)
-      //                       .block( Block::new()
-      //                           .title("tracing日志").red()
-      //                           .borders(Borders::ALL))
-      //                       .blue()
-      //                       .scroll((self.vertical_scroll as u16, 0)),
-      //
-      //                   layout[0]);
-      //    f.render_stateful_widget(
-      //        Scrollbar::default()
-      //            .orientation(ScrollbarOrientation::VerticalRight)
-      //            .begin_symbol(Some("↑"))
-      //            .end_symbol(Some("↓")),
-      //        layout[0],
-      //        &mut self.vertical_scroll_state,
-      //    );
+         let block=Block::new()
+             .borders(Borders::NONE).padding(Padding::zero());
+         let outblock=Block::new()
+             .title("Tracing日志").red()
+             .borders(Borders::ALL).padding(Padding::zero());
+
          let list = List::new(list_item)
-             .block( Block::new()
-                 .title("Tracing日志").red()
-                 .borders(Borders::ALL))
+             .block(block)
              .highlight_style(
                  Style::default()
                      .add_modifier(Modifier::BOLD)
@@ -91,8 +68,8 @@ impl Component for TracingLogComponent{
              )
              .highlight_symbol(">")
              .highlight_spacing(HighlightSpacing::Always);
-             //.direction(ListDirection::BottomToTop);
-         f.render_widget(list, layout[0]);
+        f.render_widget(outblock,rect);
+         f.render_widget(list, layout[0].inner(&Margin::new(1,1)));
          Ok(())
     }
     fn update(& mut self, action: Option<Action>) ->Result<(),MyError>{

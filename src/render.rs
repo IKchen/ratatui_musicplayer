@@ -4,7 +4,7 @@ use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::Mutex;
 use tokio::task::{JoinHandle, spawn};
@@ -61,6 +61,7 @@ impl Render {
         let mut analysis=Analysis::new(action_sender.clone());
         let mut muiscprogress=crate::components::musicprogress::MusicProgress::new();
         let mut lyric=crate::components::lyric::LyricZone::new();
+        let mut title=crate::components::apptitle::AppTitle::new();
         // 将 app 参数移动到异步闭包中
         tokio::spawn(async move {
 
@@ -166,7 +167,7 @@ impl Render {
                     muiscprogress.set_count();
                   //  analysis.get_fft_result().await;//还没处理完，一直在处理，所以绘制不了图形
                  //   info!("achive_duration is {:?}:?",muiscprogress.achive_duration.as_secs());
-                  info!("progress is {:?}:?",muiscprogress.progress);
+                  info!("刷新");
                     match act_recv {
                         Some(Action::Render) => {
                                 tui.lock().await.terminal.draw(|frame| {
@@ -174,13 +175,13 @@ impl Render {
 
                                     let layout=Layout::new(
                                         Direction::Vertical,
-                                        [Constraint::Percentage(70), Constraint::Percentage(30)],
+                                        [Constraint::Min(7),Constraint::Percentage(70), Constraint::Min(6)],
                                     ).split(frame.size());
 
                                     let mut sub_layout=Layout::new(
                                         Direction::Horizontal,
                                         [Constraint::Percentage(25),Constraint::Percentage(75)],
-                                    ).split(layout[0]);
+                                    ).split(layout[1]);
                                     let mut fft_layout=Layout::new(
                                         Direction::Horizontal,
                                         [Constraint::Percentage(45), Constraint::Percentage(55)],
@@ -190,13 +191,13 @@ impl Render {
                                         [Constraint::Max(3), Constraint::Min(5),Constraint::Max(3)],
                                     ).split(fft_layout[0]);
 
-                                    tracinglog.draw(frame,layout[1]).expect("绘制图形失败");
+                                    title.draw(frame,layout[0]).expect("绘制图形失败");
                                     filelist.draw(frame,sub_layout[0]).expect("绘制图形失败");
                                     playzone.draw(frame,playzone_layout[0]).expect("绘制图形失败");
                                     muiscprogress.draw(frame,playzone_layout[2]).expect("绘制图形失败");
                                     lyric.draw(frame,playzone_layout[1]).expect("绘制图形失败");
                                     analysis.draw(frame,fft_layout[1]).expect("绘制图形失败");
-
+                                    tracinglog.draw(frame,layout[2]).expect("绘制图形失败");
                                     analysis.clear_data();
                                 })?;
 

@@ -43,7 +43,8 @@ impl MusicProgress{
 
     }
     pub fn set_count(&mut self){
-        self.achive_duration=self.start.elapsed();
+        if self.start.elapsed().as_secs()>=self.total_duration { self.achive_duration=Duration::from_secs(0) }
+        else {  self.achive_duration=self.start.elapsed(); }
     }
 }
 impl Component for  MusicProgress{

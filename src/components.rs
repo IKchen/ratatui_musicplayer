@@ -16,6 +16,7 @@ pub mod playzone;
 pub mod analysis;
 pub mod musicprogress;
 pub mod lyric;
+pub mod apptitle;
 
 
 pub trait Component{

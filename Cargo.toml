@@ -19,3 +19,4 @@ tokio-stream= { version = "0.1.14", features = [] }
 rodio = "0.17.3"
 rustfft = "6.2.0"
 mp3-duration = "0.1.10"
+indoc = "2.0.4"

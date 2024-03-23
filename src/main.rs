@@ -43,9 +43,8 @@ pub type CrosstermTerminal<W> = ratatui::Terminal<ratatui::backend::CrosstermBac
      fn hanning_window(length: usize) -> Vec<f32> {
          (0..length).map(|i| 0.5 - 0.5 * (2.0 * PI * i as f32 / (length - 1) as f32).cos()).collect()
      }
-    let mut app=App::new();
-    runner(app).await?;
-
+     let mut app=App::new();
+      runner(app).await?;
 
     Ok(())
 }
