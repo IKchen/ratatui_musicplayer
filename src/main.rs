@@ -9,6 +9,7 @@ mod tracing;
 mod file;
 mod fft;
 mod musicplayer;
+mod lyric;
 //mod config;
 
 use std::f32::consts::PI;
@@ -30,6 +31,7 @@ use std::thread;
 use std::time::Duration;
 use rustfft::num_traits::ToPrimitive;
 use crate::fft::FFTController;
+use crate::lyric::LyricController;
 use crate::musicplayer::MusicPlayer;
 
 //自定义类型别名,避免类型名称过长
@@ -43,8 +45,9 @@ pub type CrosstermTerminal<W> = ratatui::Terminal<ratatui::backend::CrosstermBac
      fn hanning_window(length: usize) -> Vec<f32> {
          (0..length).map(|i| 0.5 - 0.5 * (2.0 * PI * i as f32 / (length - 1) as f32).cos()).collect()
      }
-     let mut app=App::new();
-      runner(app).await?;
+      let mut app=App::new();
+       runner(app).await?;
+
 
     Ok(())
 }

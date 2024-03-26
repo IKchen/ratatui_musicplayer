@@ -22,6 +22,7 @@ use crate::action::ActionReactor;
 use crate::action::Action;
 use crate::fft::{FFTController, get_fft_result};
 use crate::file::FileList;
+use crate::lyric::LyricController;
 use crate::musicplayer::MusicPlayer;
 use crate::render::Render;
 use crate::tracing::{recv_log, TracingLog};
@@ -158,6 +159,9 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     let mut fft_result_buffer=Arc::new(Mutex::new(Vec::new()));
     let fft_result_set_handle=get_fft_result(music_reciver,Arc::clone(&fft_result_buffer));
 
+    let mut lyric=LyricController::new("./music".to_string());
+    lyric.get_file().await?;
+    let initaled_lyric=lyric.inital_lyric();
     // let mut filelist=FileList::new();
     // filelist.load_filelist().await?;
     // let filelistname=filelist.get_file_list();
@@ -199,7 +203,7 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
         _) = tokio::join!(
             handler.run(app.tick_rate, app.frame_rate),
             reactor.run(),
-            render.run(Arc::new(app),action_sender.clone(),Arc::clone(&fft_result_buffer),total_time),
+            render.run(Arc::new(app),action_sender.clone(),Arc::clone(&fft_result_buffer),total_time,initaled_lyric),
             recv_handle,//异步获取tracing 日志
            musicplayer.play(),
             fft_controller.start_process(),

@@ -19,6 +19,7 @@ use crate::tui::Tui;
 use crate::components::quit::Quit;
 use crate::error::MyError;
 use crate::file::FileList;
+use crate::lyric::Lyric;
 use crate::musicplayer::MusicPlayer;
 
 
@@ -47,7 +48,7 @@ impl Render {
     }
     //引用app的时候，render的run函数 无法知道 app 引用的生命周期是否能覆盖run的生命周期，只有在app run 中调用 render run才能保证app的生命周期
     //大于run（但是编译器不知道，也不能限制只能在app run 中调用 render run ）
-    pub  fn run(& mut self, app: Arc<App>, action_sender:UnboundedSender<Action>, fft_result: Arc<Mutex<Vec<(String, u64)>>>,total_duration:u64) ->JoinHandle<Result<(), MyError>>{
+    pub  fn run(& mut self, app: Arc<App>, action_sender:UnboundedSender<Action>, fft_result: Arc<Mutex<Vec<(String, u64)>>>,total_duration:u64,initaled_lyric:Vec<Lyric>) ->JoinHandle<Result<(), MyError>>{
         let action_receiver = Arc::clone(&self.action_receiver);
         let tui = Arc::clone(&self.tui);
         let cancelation_token = self.cancelation_token.clone();
@@ -60,7 +61,7 @@ impl Render {
         let mut filelist=FileList::new();
         let mut analysis=Analysis::new(action_sender.clone());
         let mut muiscprogress=crate::components::musicprogress::MusicProgress::new();
-        let mut lyric=crate::components::lyric::LyricZone::new();
+        let mut lyric=crate::components::lyric::LyricZone::new(initaled_lyric);
         let mut title=crate::components::apptitle::AppTitle::new();
         // 将 app 参数移动到异步闭包中
         tokio::spawn(async move {
@@ -70,6 +71,7 @@ impl Render {
             let mut filelist=crate::components::filelist::FileListComponent::new(filelistname);
             tracinglog.register_action_handler(action_sender.clone());//设置日志动作发送器，用来自动滚屏
             filelist.register_action_handler(action_sender.clone());//设置文件动作发送器，用来触发update
+            lyric.register_action_handler(action_sender.clone());
             muiscprogress.start_count();
 
             muiscprogress.get_duration(total_duration);
@@ -226,7 +228,8 @@ impl Render {
                             filelist.update(Some(Action::Down))?
                         }
                         Some(Action::Update)=>{
-                            analysis.update(Some(Action::Update))?
+                            lyric.update(Some(Action::Update))?
+
                         }
                         Some(_) => {
                             break
