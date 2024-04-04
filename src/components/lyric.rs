@@ -70,7 +70,7 @@ impl Component for LyricZone{
 
             // 将分钟和秒数转换为Duration
             let now_duration = Duration::new(minutes * 60 + seconds, 0);
-            if self.start.elapsed()>now_duration{
+            if self.start.elapsed()>now_duration{//时长大于当前的时间戳，就往下走一句
                 self.next()
             }
         }

@@ -208,7 +208,7 @@ impl  EventHandler {
     pub async  fn select_test(cancellation_token: CancellationToken,event_tx:UnboundedSender<Event>){
         let mut reader = crossterm::event::EventStream::new();
         let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
-        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 60.0));
+        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 ));
         loop {
 
             let crossterm_event = reader.next().fuse();

@@ -147,18 +147,17 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     let mut handler=event::EventHandler::new(event_sender);
 
     //设置音乐播放
-    let (music_tx, music_reciver) = mpsc::unbounded_channel();
-    let (sample_sender,samole_receiver)=mpsc::unbounded_channel();
+    let (music_tx, music_reciver) = mpsc::unbounded_channel();//发送和接收fft处理后的数据
+    let (sample_sender,samole_receiver)=mpsc::unbounded_channel();//播放时，发送样本数据给fft
     let mut musicplayer=MusicPlayer::new("music/music1.mp3".to_string(),sample_sender);
     let mut action_sender_clone=action_sender.clone();
     //音乐进度初始化
     let mut total_time=musicplayer.get_music_duration();
-    let mut achive_duration=Arc::new(Mutex::new(Duration::from_secs(0)));
     //fft处理
     let mut fft_controller=FFTController::new("music/music1.mp3".to_string(),44100.0,4096,samole_receiver,music_tx,action_sender_clone);
     let mut fft_result_buffer=Arc::new(Mutex::new(Vec::new()));
     let fft_result_set_handle=get_fft_result(music_reciver,Arc::clone(&fft_result_buffer));
-
+    musicplayer.play();
     let mut lyric=LyricController::new("./music".to_string());
     lyric.get_file().await?;
     let initaled_lyric=lyric.inital_lyric();
@@ -199,13 +198,13 @@ pub async fn runner(mut app:  App) ->Result<(),MyError>{
     //join handle,等待异步handle 执行完任务，才退出主流程，不然主流程会执行完就退出了
     // spawn 生成的异步task，由Tokio 的任务调度器负责调度任务队列
     let (hanler_err, reactor_err,
-        render_err,_,_,_,
+        render_err,_,_,
         _) = tokio::join!(
             handler.run(app.tick_rate, app.frame_rate),
             reactor.run(),
             render.run(Arc::new(app),action_sender.clone(),Arc::clone(&fft_result_buffer),total_time,initaled_lyric),
             recv_handle,//异步获取tracing 日志
-           musicplayer.play(),
+
             fft_controller.start_process(),
         fft_result_set_handle
 );

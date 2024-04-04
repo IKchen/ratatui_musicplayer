@@ -129,6 +129,16 @@ impl ActionReactor {
                                     info!("发送动作: Aciton::Down");
                                 }
                             }
+                            KeyCode::Enter => {
+                                if let Err(err) = action_sender.send(Action::Selected) {
+                                    info!("Error sending action: {:?}", err);
+
+                                } else {
+                                    last_tick_key_events_react.drain(..);//清空数组
+                                    last_tick_key_events_react.push(Action::Down);
+                                    info!("发送动作: Aciton::Down");
+                                }
+                            }
                             _ => (),
                         }
                     }

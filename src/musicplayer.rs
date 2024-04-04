@@ -1,19 +1,16 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
-use std::sync::Arc;
-use std::thread;
+use std::sync::{Arc, Mutex};
 use rodio::{Decoder, OutputStream, Sink, Source};
-use rodio::source::Buffered;
+
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tokio::sync::{Mutex, oneshot};
-use crate::action::Action;
-use crate::fft::FFTController;
+
 
 pub struct MusicPlayer
 {
     //pub source:Decoder<Buffered<File>>,
-  //  pub sink:Sink,
+    pub sink: Arc<Mutex<Option<Sink>>>,
     pub file_path:String,
     pub sender: UnboundedSender<f32>,
 }
@@ -21,17 +18,20 @@ pub struct MusicPlayer
 impl  MusicPlayer {
     pub fn new(file:String,sender:UnboundedSender<f32>)->Self{
         // let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-        // let sink = Sink::try_new(&stream_handle).unwrap();
+        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+        let sink =Arc::new(Mutex::new(Some(Sink::try_new(&stream_handle).unwrap()))) ;
+     //   let sink = Arc::new(Mutex::new(None)); // 初始时没有播放，因此为None
         let file_path=file;
 
-        Self{file_path,sender}
+        Self{sink,file_path,sender}
     }
-  pub async fn play(&self) {
+  pub  fn play(&self) {
 
       let file_path = self.file_path.clone();
       let sample_sender = self.sender.clone();
-      let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-      let sink = Sink::try_new(&stream_handle).unwrap();
+      let sink_clone=Arc::clone(&self.sink);
+
+      //解码文件
       let file1 = File::open(file_path.clone()).expect("文件路径有问题");
       let buf_reader1 = BufReader::new(file1);
       let mut source1 = Decoder::new(buf_reader1).unwrap().convert_samples::<f32>();
@@ -39,18 +39,28 @@ impl  MusicPlayer {
 
 
      // let start = Instant::now(); // 开始计时
-      tokio::task::spawn_blocking(move || {
+      spawn(move || {
+           let  mut sink_guard=sink_clone.lock().unwrap();
+          if let Some(sink) = &mut *sink_guard { // 解引用MutexGuard并匹配Option,获取解引用后的值的引用，不获取所有权
+             println!("播放成功");
+              sink.append(my_source); // 正确调用Sink的方法
+              sink.sleep_until_end(); // 正确调用Sink的方法
 
-          sink.append(my_source);
+          }
+          // *sink.append(my_source);
+          // *sink_clone.lock().unwrap().unwrap().append(my_source);
 
 
-          sink.sleep_until_end();
+          //*sink_clone.lock().unwrap().sleep_until_end();
 
 
-      }).await.unwrap(); // 注意这里添加了await来等待spawn_blocking里的任务完成
+      }); // 注意这里添加了await来等待spawn_blocking里的任务完成
      // *achive_duration.lock().await= start.elapsed(); // 计算经过的时间
-      //println!("achive_duration is {:?},total_duration is {:?}",*achive_duration.lock().await,*total_duration.lock().await);
+      // println!("achive_duration is {:?},total_duration is {:?}",*achive_duration.lock().await,*total_duration.lock().await);
     //  if  *achive_duration.lock().await>=*total_duration.lock().await{ *achive_duration.lock().await=Duration::from_secs(0) }
+
+
+
 
   }
     pub fn get_music_duration(&mut self)->u64{
@@ -60,12 +70,35 @@ impl  MusicPlayer {
         let time_value=time.as_secs();
         time_value
     }
-
+    // 暂停音乐
+    pub fn pause(&self) {
+        let sink_guard = self.sink.lock().unwrap();
+        if let Some(ref sink) = *sink_guard {
+            sink.pause();
+        }
+    }
+    // 停止音乐
+    pub fn stop(&self) {
+        let mut sink_guard = self.sink.lock().unwrap();
+        *sink_guard = None; // 通过设置为None来停止播放，播放线程会等待不会结束
+       // *sink_guard.stop() // 停止播放，并清空序列，播放线程会结束
+    }
+    // 恢复音乐
+    pub fn replay(&self) {
+        let mut sink_guard = self.sink.lock().unwrap();
+        if let Some(ref sink) = *sink_guard {
+            sink.play();
+        }
+    }
+    pub fn set_play_path(&mut self,file:String){
+        self.file_path=file;
+    }
 }
 
 
 use rodio::{ Sample};
 use std::sync::mpsc::{channel, Sender};
+use std::thread::spawn;
 use std::time::{Duration, Instant};
 use futures::future::ok;
 use tokio::task::JoinHandle;

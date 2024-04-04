@@ -1,3 +1,4 @@
+use std::path::Path;
 use ratatui::widgets::ListState;
 use tokio::fs;
 use tokio::fs::File;
@@ -28,14 +29,16 @@ impl FileItem{
 }
 impl FileList{
     pub fn new()->Self{
-        let mut file_path=".".to_string();
+        let mut file_path="./music".to_string();
         let mut item_list=Vec::new();
         let item_status = ListState::default();
         let last_selected=None;
         Self{file_path,item_list,item_status,last_selected}
     }
     pub async fn load_filelist(& mut self)->Result<(),MyError>{
-         let mut entries = fs::read_dir(".").await?;
+        let path_clone=self.file_path.clone();
+        let path=Path::new(&path_clone);
+         let mut entries = fs::read_dir(path).await?;
             while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.is_file() {
