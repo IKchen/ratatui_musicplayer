@@ -1,11 +1,11 @@
 use std::ffi::OsStr;
+use std::fs;
 use std::fs::File;
 use std::io::Read;
 use std::time::Duration;
-use futures::future::ok;
-use tokio::fs;
 use crate::error::MyError;
 #[derive(Clone,Debug)]
+// 单句歌词和时间标记
 pub struct Lyric{
     pub lyric:String,
     pub time:String,
@@ -31,16 +31,37 @@ impl LyricController {
         let mut filestring=String::new();
         Self{path,lyric,time,filestring}
     }
-    pub async fn get_file(&mut self)->Result<(),MyError>{
-        let mut entries = fs::read_dir("./music").await?;
-        while let Some(entry) = entries.next_entry().await? {
-            let path = entry.path();
+    //获取文件的异步实现
+    // pub async fn get_file(&mut self)->Result<(),MyError>{
+    //     let mut entries = fs::read_dir("./music").await?;
+    //     while let Some(entry) = entries.next_entry().await? {
+    //         let path = entry.path();
+    //         if path.is_file() {
+    //             match path.extension().and_then(OsStr::to_str) { // 转换为 &str 以便比较
+    //                 Some("lrc") => {
+    //                     File::open(path.clone()).expect("歌词文件打开失败").read_to_string(&mut self.filestring).expect("歌词文件读取失败");
+    //                 //    println!("Found lyc file: {:?}", path);
+    //                 //    println!("lyric is \n {}",self.filestring);
+    //                 }
+    //                 Some("mp3") => println!("Found mp3 file: {:?}", path),
+    //                 Some(ext) => println!("Found other type of file: {}, extension: {}", path.display(), ext),
+    //                 None => println!("File has no extension: {:?}", path),
+    //             }
+    //         }
+    //     }
+    //     Ok(())
+    // }
+    //获取文件的同步实现
+    pub  fn get_file(&mut self)->Result<(),MyError>{
+        let mut entries = fs::read_dir("./music").expect("路径未读取成功");
+        for entry in entries{
+            let path = entry.expect("根据路径获取文件信息失败").path();
             if path.is_file() {
                 match path.extension().and_then(OsStr::to_str) { // 转换为 &str 以便比较
                     Some("lrc") => {
                         File::open(path.clone()).expect("歌词文件打开失败").read_to_string(&mut self.filestring).expect("歌词文件读取失败");
-                    //    println!("Found lyc file: {:?}", path);
-                    //    println!("lyric is \n {}",self.filestring);
+                        //    println!("Found lyc file: {:?}", path);
+                        //    println!("lyric is \n {}",self.filestring);
                     }
                     Some("mp3") => println!("Found mp3 file: {:?}", path),
                     Some(ext) => println!("Found other type of file: {}, extension: {}", path.display(), ext),

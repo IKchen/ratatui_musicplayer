@@ -15,6 +15,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use crate::action::Action;
+use crate::app::App;
 use crate::error::MyError;
 
 pub struct FFTController
@@ -136,23 +137,10 @@ impl FFTController
     }
 }
 
- pub async fn get_fft_result(mut music_reciver:UnboundedReceiver<Vec<f32>>, fft_result_buffer:Arc<Mutex<Vec<(String, u64)>>>) ->(JoinHandle<()>){
-     *fft_result_buffer.lock().await=vec![
-         ("B1".to_string(), 0),
-         ("B2".to_string(), 0),
-         ("B3".to_string(), 0),
-         ("B4".to_string(), 0),
-         ("B5".to_string(), 0),
-         ("B6".to_string(),0),
-         ("B7".to_string(), 0),
-         ("B8".to_string(), 0),
-         ("B9".to_string(), 0),
-         ("B10".to_string(), 0),
-         ("B11".to_string(), 0),
-         ("B12".to_string(), 0),
-     ];
+ pub async fn get_fft_result(mut music_reciver:UnboundedReceiver<Vec<f32>>, app:Arc<Mutex<App>>) ->(JoinHandle<()>){
+
     let get_fft_result_handle= tokio::spawn(async move{
-        let mut fft_buffer_clone=Arc::clone(&fft_result_buffer);
+        let mut fft_buffer_clone=Arc::clone(&app.lock().await.fft_result);
          while let mut fft_result=music_reciver.recv().await.unwrap(){
              info!("更新data数据");
              //  println!("fft 是{:?}",fft_result);

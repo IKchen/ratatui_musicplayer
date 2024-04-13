@@ -14,12 +14,12 @@ use crate::error::MyError;
 
 pub struct Analysis{
     pub data: Vec<(String, u64)>,
- //   pub music_reciver:UnboundedReceiver<Vec<f32>>,
+
     pub action_sender:UnboundedSender<Action>,
 }
 
 impl Analysis{
-    pub fn new( //music_reciver:UnboundedReceiver<Vec<f32>>,
+    pub fn new(
                 action:UnboundedSender<Action> )->Self{
 
         Analysis{

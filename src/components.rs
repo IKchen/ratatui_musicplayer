@@ -17,6 +17,7 @@ pub mod analysis;
 pub mod musicprogress;
 pub mod lyric;
 pub mod apptitle;
+mod banner;
 
 
 pub trait Component{

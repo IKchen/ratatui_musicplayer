@@ -6,10 +6,11 @@ mod app;
 mod action;
 mod render;
 mod tracing;
-mod file;
+
 mod fft;
 mod musicplayer;
 mod lyric;
+mod sounds;
 //mod config;
 
 use std::f32::consts::PI;
@@ -30,9 +31,11 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 use rustfft::num_traits::ToPrimitive;
+use tokio::sync::mpsc;
 use crate::fft::FFTController;
 use crate::lyric::LyricController;
 use crate::musicplayer::MusicPlayer;
+use crate::sounds::SoundsList;
 
 //自定义类型别名,避免类型名称过长
 pub type CrosstermTerminal<W> = ratatui::Terminal<ratatui::backend::CrosstermBackend<W>>;

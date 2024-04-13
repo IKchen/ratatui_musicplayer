@@ -1,10 +1,11 @@
-use indoc::indoc;
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::prelude::{Alignment, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Padding, Paragraph, Wrap};
 use crate::action::Action;
+use crate::components::banner::BANNER;
 use crate::components::Component;
 use crate::error::MyError;
 
@@ -25,12 +26,7 @@ impl Component for AppTitle{
         let block=Block::new().borders(Borders::ALL).light_red().padding(Padding::new(0,0,0,0)).title("out");
         let iner_block = Block::default().title("right").borders(Borders::ALL).padding(Padding::zero());
 
-        let paragraph=Paragraph::new(r" ███╗   ███╗██╗   ██╗███████╗██╗ ██████╗    ██████╗ ██╗      █████╗ ██╗   ██╗███████╗██████╗
-        ████╗ ████║██║   ██║██╔════╝██║██╔════╝    ██╔══██╗██║     ██╔══██╗╚██╗ ██╔╝██╔════╝██╔══██╗
-        ██╔████╔██║██║   ██║███████╗██║██║         ██████╔╝██║     ███████║ ╚████╔╝ █████╗  ██████╔╝
-        ██║╚██╔╝██║██║   ██║╚════██║██║██║         ██╔═══╝ ██║     ██╔══██║  ╚██╔╝  ██╔══╝  ██╔══██╗
-        ██║ ╚═╝ ██║╚██████╔╝███████║██║╚██████╗    ██║     ███████╗██║  ██║   ██║   ███████╗██║  ██║
-        ╚═╝     ╚═╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝    ╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝")
+        let paragraph=Paragraph::new(BANNER)
             .block(Block::new().borders(Borders::ALL).title("left").padding(Padding::zero())).yellow()
             .alignment(Alignment::Left).wrap(Wrap { trim:true });
         //f.render_widget(block,rect);

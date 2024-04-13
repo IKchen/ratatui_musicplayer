@@ -2,6 +2,7 @@ use std::string::String;
 use std::sync::{Arc};
 use std::time::Duration;
 use ratatui::text::Text;
+use rustfft::num_complex::ComplexFloat;
 use tokio::sync::{mpsc, Mutex};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
@@ -10,6 +11,7 @@ use tracing::info;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::layer::{Context, Layer, SubscriberExt};
 use tracing_subscriber::Registry;
+use crate::app::App;
 //use tokio::sync::Mutex;
 use crate::error::MyError;
 
@@ -22,34 +24,28 @@ pub struct TracingLog{
 }
 
 impl TracingLog {
-    pub fn new(log_sender:UnboundedSender<String>) -> Self {
+    pub fn new() -> (Self,UnboundedReceiver<String> ){
         let logs=Vec::new();
-     //   let (log_sender, log_receiver) = mpsc::unbounded_channel();
+        let (log_sender, log_receiver) = mpsc::unbounded_channel();
 
-        Self{
+        ( Self{
             logs,log_sender
-        }
+        },log_receiver)
+    }
+    //初始化日志，把tracinglog 设置为全局
+    pub fn init_log(self)->Result<(),MyError>{
+
+        let subscriber = tracing_subscriber::Registry::default().with(self);
+        //println!("Subscriber initialized: {:?}", subscriber);
+        // 全局的subscriber 只能有一个
+        tracing::subscriber::set_global_default(subscriber).map_err(|e| {
+            eprintln!("Failed to set global default subscriber: {}", e);
+            MyError::InitializationError
+        })?;
+        //info!("初始化日志成功");
+        Ok(())
     }
 
-    // pub fn initialize_logging(self) -> Result<(), MyError> {
-    //     let logs_shared = Arc::clone(&self); // 对self的log 进行解引用
-    //     let subscriber = tracing_subscriber::Registry::default().with(logs_shared);
-    //     println!("Subscriber initialized: {:?}", subscriber);
-    //     // 全局的subscriber 只能有一个
-    //     tracing::subscriber::set_global_default(subscriber).map_err(|e| {
-    //         eprintln!("Failed to set global default subscriber: {}", e);
-    //         MyError::InitializationError
-    //     })?;
-    //     info!("初始化成功");
-    //
-    //     Ok(())
-    // }
-   // 获取日志中的log 数据
-   //  pub fn get_log(& self)-> Vec<String>{
-   //     let log= Arc::clone(&self.logs).lock().unwrap();
-   //     let logs=(*log).clone();
-   //      logs
-   //  }
 
 }
 //实现layer trait
@@ -71,42 +67,21 @@ impl<S> Layer<S> for TracingLog
 
     }
 }
-//接收tracing产生的日志数据，并存到一个text 里面
-pub  fn recv_log(log_receiver:  UnboundedReceiver<String>, text: Arc<Mutex<String>> ) ->(JoinHandle<()>) {
+//接收tracing产生的日志数据，并存到一个app 里面
+pub  fn recv_log(log_receiver:  UnboundedReceiver<String>, app:  Arc<Mutex<App>> ) ->(JoinHandle<()>) {
 
-    let logs = Arc::new(Mutex::new(Vec::new()));
     let mut log_receiver=log_receiver;
-    let logs_clone = Arc::clone(&logs);
 
     let handle = tokio::spawn(async move {
         while let Some(log) = log_receiver.recv().await {
             // 在这里处理日志
-            let mut logs = logs_clone.lock().await;
-            logs.push(log);
-            *text.lock().await= logs.join("\n");
+           // let mut logs = logs_clone.lock().await;
+           // logs.push(log);
+           // *text.lock().await= logs.join("\n");
           //  println!("text in task is {:?}",*text.lock().await)
+            app.lock().await.log.push(log)
         }
     });
-
-    //handle.await.unwrap(); // 等待异步任务完成
-
-    // let x=text.lock().unwrap().clone();
-    // (handle,x)
     handle
-    // 设置超时时间为5秒，可以根据实际需求调整
-    // let timeout_duration = Duration::from_secs(5);
-    // let result = timeout(timeout_duration, handle).await;
-    //
-    // match result {
-    //     Ok(_) => {
-    //         // 异步任务完成，返回最终的text值
-    //         let x = text.lock().await.clone();
-    //         x
-    //     }
-    //     Err(_) => {
-    //         // 超时未收到消息，返回当前的text值
-    //         let x = text.lock().await.clone();
-    //         x
-    //     }
-    // }
 }
+

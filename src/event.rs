@@ -166,7 +166,7 @@ impl  EventHandler {
     //         }
     //     }
     // }
-    pub  fn run(&mut self, tick_rate: f64, render_rate: f64)->JoinHandle<()>{
+    pub  fn run(&mut self)->JoinHandle<()>{
         let cancelation_token = self.cancelation_token.clone();
         let event_tx = self.sender.clone();
         event_tx.send(Event::Render).expect("渲染事件发送失败");
