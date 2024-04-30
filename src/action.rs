@@ -166,7 +166,8 @@ impl ActionReactor {
                                             self.app.lock().await.set_filelist_component_seleted_item();//设置播放音频的id
                                             self.app.lock().await.set_musicprogress_component_total_duration();//设置音频总时长
                                             self.app.lock().await.components.music_progress.reset_count();//重置音频计时
-                                            self.app.lock().await.update_component();
+                                            self.app.lock().await.set_playing_message();//重置音频信息
+                                            self.app.lock().await.set_lyric();//重置音频歌词
                                             let path=self.app.lock().await.sounds_list.get_playingsound_path();
                                             action_sender.send((Action::Start,Some(path) )).expect("发送动作失败");
                                         }

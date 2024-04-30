@@ -113,9 +113,18 @@ impl App{
     pub  fn update_component(&mut self){
 
         self.components.tracing_log_component.set_log(self.log.join("\n"));
-
+       // self.components.lyric_zone.set_lyric(self.sounds_list.get_playingsound_lyric());//设置歌词
+      //  self.components.play_zone.set_playing_message(self.sounds_list.get_playingsound_name());//设置播放音频名称
+    }
+    //设置歌词
+    pub fn set_lyric(&mut self){
         self.components.lyric_zone.set_lyric(self.sounds_list.get_playingsound_lyric());
     }
+    //设置播放音频名称
+    pub fn set_playing_message(&mut self){
+        self.components.play_zone.set_playing_message(self.sounds_list.get_playingsound_name());
+    }
+
     //获取filelist 组件的被选中文件id,并set 到soundlist 里面，用来音频播放
     pub fn set_filelist_component_seleted_item(&mut self) {
         self.sounds_list.playing_item_id=self.components.file_list_component.get_selected_item_id();

@@ -27,11 +27,10 @@ impl  MusicPlayer {
       //  println!("action is {action:?}");
         match action {
             Action::Start=>{
-            self.play();
+                self.play();
             }
             Action::Replay=>{
                 self.replay()
-
             }
             Action::Pause=>{
                 self.pause()
