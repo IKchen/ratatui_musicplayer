@@ -9,6 +9,7 @@ use crate::components::banner::BANNER;
 use crate::components::Component;
 use crate::error::MyError;
 
+#[derive(Clone)]
 pub struct AppTitle{
     pub title: String,
 }
@@ -31,7 +32,7 @@ impl Component for AppTitle{
             .alignment(Alignment::Left).wrap(Wrap { trim:true });
         //f.render_widget(block,rect);
         f.render_widget(paragraph,layout[0].inner(&Margin::new(0,0)));
-        let paragraph2=Paragraph::new("q：退出  i:上选择  k：下选择").block(iner_block)
+        let paragraph2=Paragraph::new("q：退出  ↑:上选择  ↓：下选择").block(iner_block)
             .light_yellow().alignment(Alignment::Right).wrap(Wrap { trim:true });
         f.render_widget(paragraph2,layout[1]);
         Ok(())

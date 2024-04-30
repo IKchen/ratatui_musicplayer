@@ -1,10 +1,10 @@
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Sender;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::{prelude::*, widgets::*};
 use tokio::fs;
-use tokio::sync::mpsc::UnboundedSender;
 use crate::action::Action;
 use crate::app::App;
 use crate::components::Component;
@@ -17,23 +17,28 @@ pub struct FileListComponent {
     pub sound_list:SoundsList,
     pub vertical_scroll:usize,
     pub vertical_scroll_state:ScrollbarState,
-    pub action_tx: Option<UnboundedSender<Action>>,
+    pub action_tx: Option<Sender<Action>>,
 }
 
 impl  FileListComponent  {
-    pub fn new(sound_list: SoundsList)->Self{
+    pub fn new()->Self{
 
         let mut vertical_scroll=0;
         let mut vertical_scroll_state=ratatui::widgets::ScrollbarState::new(20);
 
         let mut action_tx=None;
-        Self{sound_list,vertical_scroll,vertical_scroll_state,action_tx}
+        Self{sound_list:SoundsList::default(),vertical_scroll,vertical_scroll_state,action_tx}
     }
-    pub fn get_item_name(&mut self,index:usize)->String{
-        if let Some(item)=self.sound_list.sounds.get(index){
-            let item_name=item.name.clone();
-            return item_name
-        } else { "noting".to_string() }
+    pub fn set_file_list(&mut self,sound_list:SoundsList){
+        self.sound_list=sound_list;
+        self.sound_list.item_status.select(Some(0));//初始设置选中第一条
+    }
+    pub fn get_selected_item_id(&mut self)->Option<usize>{
+        if let Some(item)=self.sound_list.item_status.selected(){
+
+            return Some(item)
+        } else { None }
+
     }
     pub fn next(&mut self) {
         let i = match self.sound_list.item_status.selected() {
@@ -68,8 +73,10 @@ impl Component for  FileListComponent {
         let mut list_1:Vec<ListItem>=Vec::new();
         let mut itemlist=self.sound_list.sounds.clone();
         for fileitem in itemlist{
-            let mut listitem=ListItem::new(fileitem.name).bg(Color::Black);
-            list_1.push(listitem);
+            if fileitem.sound_path!=""{
+                let mut listitem=ListItem::new(fileitem.name).bg(Color::Black);
+                list_1.push(listitem);
+            }
         }
 
         //self.filelist.item_status.select(Some(0));
@@ -92,7 +99,7 @@ impl Component for  FileListComponent {
         match action {
             Some(Action::Quit)=> return Ok(()),
             Some(Action::Down) => {
-              self.next()
+                self.next()
             }
             Some(Action::Up) => {
                 self.previous()
@@ -102,14 +109,14 @@ impl Component for  FileListComponent {
             }
             _ => {}
         }
-        self.action_tx.clone().unwrap().send(Action::Render)?;
+   //     self.action_tx.clone().unwrap().send(Action::Render).unwrap();
         Ok(())
     }
     fn init(&mut self) -> Result<(), MyError> {
         Ok(())
     }
-    fn register_action_handler(&mut self, tx: UnboundedSender<Action>) {
-        self.action_tx = Some(tx);
-
-    }
+    // fn register_action_handler(&mut self, tx: Sender<Action>) {
+    //     self.action_tx = Some(tx);
+    //
+    // }
 }

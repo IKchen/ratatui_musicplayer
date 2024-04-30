@@ -13,7 +13,7 @@ use futures::future::{ok, select};
 use tokio::time::Instant;
 use tracing::info;
 use crate::error::MyError;
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum  Event{
     Init,
     Quit,
@@ -31,216 +31,97 @@ pub enum  Event{
 }
 pub struct EventHandler{
     pub event:Event,
-    pub task:JoinHandle<()>,
     pub cancelation_token:CancellationToken,
     pub sender:UnboundedSender<Event>,
-   // pub recever:UnboundedReceiver<Event>,
+    pub receiver:UnboundedReceiver<Event>,
 }
 impl  EventHandler {
     //初始化
-    pub fn new(event_sender: UnboundedSender<Event>) -> Self {
+    pub fn new() -> Self {
         let event = Event::None;
-        let task = tokio::spawn(async {});
         let cancelation_token = CancellationToken::new();
-        let sender = event_sender;
-        Self { event, task, cancelation_token, sender }
+        let (sender, receiver) = mpsc::unbounded_channel();
+        Self { event, cancelation_token, sender ,receiver}
     }
-    //运行
-    // pub fn run(&mut self,tick_rate:f64,render_rate:f64)->Result<(),MyError>{
-    //     let _cancelation_token=self.cancelation_token.clone();
-    //     let _event_tx = self.sender.clone();
-    //     let tick_delay = std::time::Duration::from_secs_f64(1.0 / tick_rate);
-    //     let render_delay = std::time::Duration::from_secs_f64(1.0 / render_rate);
-    //     self.task=tokio::spawn(
-    //        //避免声明周期问题，变量全部传递独立所有权，而不是引用self
-    //         //在 Rust 中，你不能在同一时间既借用一个值又修改它，因为这可能导致数据竞争和不一致。
-    //     //    Self::async_task(_event_tx,_cancelation_token,tick_delay,render_delay)
-    //     async move{
-    //             let mut reader=crossterm::event::EventStream::new();
-    //             //异步执行间隔，渲染间隔
-    //             let mut tick_interval = tokio::time::interval(tick_delay);
-    //             let mut render_interval = tokio::time::interval(render_delay);
-    //             //循环执行异步任务，直到取消异步任务
-    //             loop {
-    //                 let crossterm_event=reader.next().fuse();
-    //                 tokio::select! {
-    //                       _ = _cancelation_token.cancelled() => {break;}
-    //                     maybe_event=crossterm_event=>{
-    //                         match maybe_event{
-    //                             Some(Ok(maybe_event))=>{
-    //                                  match maybe_event {
-    //                                       CrosstermEvent::Key(key) => {
-    //                                         if key.kind == KeyEventKind::Press {
-    //                                           _event_tx.send(Event::Key(key)).unwrap();
-    //                                              println!("send the event {:?}\n",Event::Key(key));
-    //                                         }
-    //                                       },
-    //                                       CrosstermEvent::Mouse(mouse) => {
-    //                                         _event_tx.send(Event::Mouse(mouse)).unwrap();
-    //                                       },
-    //                                       CrosstermEvent::Resize(x, y) => {
-    //                                         _event_tx.send(Event::Resize(x, y)).unwrap();
-    //                                       },
-    //                                       CrosstermEvent::FocusLost => {
-    //                                         _event_tx.send(Event::FocusLost).unwrap();
-    //                                       },
-    //                                       CrosstermEvent::FocusGained => {
-    //                                         _event_tx.send(Event::FocusGained).unwrap();
-    //                                       },
-    //                                       CrosstermEvent::Paste(s) => {
-    //                                         _event_tx.send(Event::Paste(s)).unwrap();
-    //                                       },
-    //                                 }
-    //                             }
-    //                             Some(Err(_)) => {
-    //                                          _event_tx.send(Event::Error).unwrap();
-    //                             }
-    //                             None => {},
-    //
-    //                         }
-    //                     }
-    //
-    //                 }
-    //             }
-    //     }
-    //     );
-    //     Ok(())
-    // }
-    //接收下一事件
-    /* pub async fn next(&mut self)->Option<Event>{
-      let event_recv= self.recever.recv().await;
-      //  println!("receiver is {:?}\n",event_recv);
-        event_recv
 
-    }*/
     pub fn close(&mut self) {
         self.cancelation_token.cancel();
     }
 
-    // async fn async_task(_event_tx:UnboundedSender<Event>,cancellation_token: CancellationToken,tick_delay:Duration,render_delay:Duration){
-    //     //读取cross term的事件流
-    //     let mut reader=crossterm::event::EventStream::new();
-    //     //异步执行间隔，渲染间隔
-    //     let mut tick_interval = tokio::time::interval(tick_delay);
-    //     let mut render_interval = tokio::time::interval(render_delay);
-    //     //循环执行异步任务，直到取消异步任务
-    //     loop {
-    //         let crossterm_event=reader.next().fuse();
-    //         tokio::select! {
-    //               _ = cancellation_token.cancelled() => {break;}
-    //             maybe_event=crossterm_event=>{
-    //                 match maybe_event{
-    //                     Some(Ok(evt))=>{
-    //                          match evt {
-    //                               CrosstermEvent::Key(key) => {
-    //                                 if key.kind == KeyEventKind::Press {
-    //                                   _event_tx.send(Event::Key(key)).unwrap();
-    //                                      println!("send the event {:?}\n",Event::Key(key));
-    //                                 }
-    //                               },
-    //                               CrosstermEvent::Mouse(mouse) => {
-    //                                 _event_tx.send(Event::Mouse(mouse)).unwrap();
-    //                               },
-    //                               CrosstermEvent::Resize(x, y) => {
-    //                                 _event_tx.send(Event::Resize(x, y)).unwrap();
-    //                               },
-    //                               CrosstermEvent::FocusLost => {
-    //                                 _event_tx.send(Event::FocusLost).unwrap();
-    //                               },
-    //                               CrosstermEvent::FocusGained => {
-    //                                 _event_tx.send(Event::FocusGained).unwrap();
-    //                               },
-    //                               CrosstermEvent::Paste(s) => {
-    //                                 _event_tx.send(Event::Paste(s)).unwrap();
-    //                               },
-    //                         }
-    //                     }
-    //                     Some(Err(_)) => {
-    //                                  _event_tx.send(Event::Error).unwrap();
-    //                     }
-    //                     None => {},
-    //
-    //                 }
-    //             }
-    //
-    //         }
-    //     }
-    // }
     pub  fn run(&mut self)->JoinHandle<()>{
         let cancelation_token = self.cancelation_token.clone();
         let event_tx = self.sender.clone();
-        event_tx.send(Event::Render).expect("渲染事件发送失败");
-      //  select_test().await?;
-       tokio::spawn(Self::select_test(cancelation_token,event_tx))
-       // tick_test().await?;
-     //   self.task= tokio::spawn(tick_test());
-
+        tokio::spawn(select_task(cancelation_token,event_tx))
+    }
+    pub async fn next(&mut self) -> Option<Event> {
+        self.receiver.recv().await
     }
 
+}
+pub async  fn select_task(cancellation_token: CancellationToken,event_tx:UnboundedSender<Event>){
+    let mut reader = crossterm::event::EventStream::new();
+    let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
+    let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 ));
+    loop {
 
-    pub fn handle_crossterm_event(event_tx: &UnboundedSender<Event>, maybe_event: CrosstermEvent) {
-        match maybe_event {
-                    CrosstermEvent::Key(key) => {
-                        if key.kind == KeyEventKind::Press {
-                            event_tx.send(Event::Key(key)).unwrap();
-                            info!("发送事件 is {:?}\n", Event::Key(key));
-                        }
-                    },
-                    CrosstermEvent::Mouse(mouse) => {
-                        event_tx.send(Event::Mouse(mouse)).unwrap();
-                    },
-                    CrosstermEvent::Resize(x, y) => {
-                        event_tx.send(Event::Resize(x, y)).unwrap();
-                    },
-                    CrosstermEvent::FocusLost => {
-                        event_tx.send(Event::FocusLost).unwrap();
-                    },
-                    CrosstermEvent::FocusGained => {
-                        event_tx.send(Event::FocusGained).unwrap();
-                    },
-                    CrosstermEvent::Paste(s) => {
-                        event_tx.send(Event::Paste(s)).unwrap();
-                    },
-                    _ => {}
+        let crossterm_event = reader.next().fuse();
+        if cancellation_token.is_cancelled() {
+            break;
         }
-
-    }
-    pub async  fn select_test(cancellation_token: CancellationToken,event_tx:UnboundedSender<Event>){
-        let mut reader = crossterm::event::EventStream::new();
-        let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
-        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 ));
-        loop {
-
-            let crossterm_event = reader.next().fuse();
-            if cancellation_token.is_cancelled() {
-                break;
-            }
-            tokio::select! {
+        tokio::select! {
                     maybe_event=crossterm_event=> {
                         match  maybe_event{
                             Some(Ok(evt))=>{
-                            Self::handle_crossterm_event(&event_tx, evt);
+                            handle_crossterm_event(&event_tx, evt);
                             }
                             Some(Err(err)) => {
-                                         event_tx.send(Event::Error).ok();
+                            event_tx.send(Event::Error).ok();
                              }
                              None => {},
                         }
                     }
                      _ = tick_interval.tick() => {
-                        event_tx.send(Event::Tick).unwrap();
+                    //    event_tx.send(Event::Tick).unwrap();
                     },
                     _ = render_interval.tick() => {
-                       event_tx.send(Event::Render).unwrap();
+                    //   event_tx.send(Event::Render).unwrap();
                     //    println!("render is  tick");
                     },
-                }
-
-        }
+            }
 
     }
 
 }
+//处理crossterm事件
+pub fn handle_crossterm_event(event_tx: &UnboundedSender<Event>, maybe_event: CrosstermEvent) {
+    match maybe_event {
+        CrosstermEvent::Key(key) => {
+            if key.kind == KeyEventKind::Press {
+                event_tx.send(Event::Key(key)).unwrap();
+                info!("发送事件 is {:?}\n", Event::Key(key));
+             //   println!("发送事件 is {:?}", Event::Key(key));
+            }
+        },
+        CrosstermEvent::Mouse(mouse) => {
+            event_tx.send(Event::Mouse(mouse)).unwrap();
+        },
+        CrosstermEvent::Resize(x, y) => {
+            event_tx.send(Event::Resize(x, y)).unwrap();
+        },
+        CrosstermEvent::FocusLost => {
+            event_tx.send(Event::FocusLost).unwrap();
+        },
+        CrosstermEvent::FocusGained => {
+            event_tx.send(Event::FocusGained).unwrap();
+        },
+        CrosstermEvent::Paste(s) => {
+            event_tx.send(Event::Paste(s)).unwrap();
+        },
+        _ => {}
+    }
+
+}
+//测试用
 pub async  fn tick_test()->Result<(), MyError>{
     let mut tick_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 4.0));
     let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / 60.0));
@@ -261,7 +142,6 @@ pub async  fn tick_test()->Result<(), MyError>{
 
         }
         tokio::select! {
-
                         _ = tick_interval.tick()=> {
                                     println!("tick_interval is {:?}", tick_interval);
 
@@ -270,13 +150,51 @@ pub async  fn tick_test()->Result<(), MyError>{
                             // 处理渲染逻辑
                                     println!("render_interval is {:?}", render_interval);
                         }
-                            // _ = {async move{println!("进入select")} } => {
-                            //     // 处理渲染逻辑
-                            //     println!("执行select");
-                            // }
+
                     }
         println!("退出 select");
     }
     Ok(())
 }
 
+#[cfg(test)]
+mod tests{
+    use std::time::Duration;
+    use crate::event::{Event, EventHandler};
+    use tokio::test;
+    use tokio::time::timeout;
+    use crate::event;
+
+    // 引入超时处理
+    //测试通道是否畅通
+    #[tokio::test]
+    async fn test_event_handle(){
+        let mut handle =EventHandler::new();
+        tokio::spawn(async move {
+            handle.sender.send(Event::Tick).unwrap();
+        }).await.unwrap();
+        let reciever=handle.receiver.recv().await.unwrap();
+        assert_eq!(Event::Tick, reciever);
+    }
+    //测试run函数
+    #[tokio::test]
+    async fn test_event_handler_run() {
+        // 创建一个新的事件处理器实例
+        let mut handler = EventHandler::new();
+        // 运行事件处理器的 run 方法，并在另一个任务中执行
+        let handle = handler.run();
+
+        // 等待接收第一个事件
+        let received_event = timeout(Duration::from_secs(10), handler.next()).await;
+
+        // 确保事件被接收到，并且是正确的事件类型
+        assert!(received_event.is_ok(), "没有在预期时间内接收到事件");
+        let event = received_event.unwrap();
+        assert!(event.is_some(), "接收到的事件是 None");
+    //    assert_eq!(event.unwrap(), event::Event::Render, "接收到的事件不是 Event::Render");
+
+        // 关闭 handle 以避免在测试结束后继续运行
+        handler.close();
+        handle.await.expect("事件处理任务运行失败");
+    }
+}

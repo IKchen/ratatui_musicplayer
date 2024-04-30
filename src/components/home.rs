@@ -1,4 +1,5 @@
 use std::sync::{Arc};
+use std::sync::mpsc::Sender;
 use ratatui::{prelude::*, widgets::*};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::Mutex;
@@ -13,7 +14,7 @@ use crate::tracing::TracingLog;
 pub struct Home {
     component_name:String,
     pub log:String,
-    pub action_tx: Option<UnboundedSender<Action>>,
+    pub action_tx: Option<Sender<Action>>,
 }
 impl  Home{
     pub fn new(log:String) -> Self {
@@ -58,8 +59,8 @@ impl Component for Home{
 
         Ok(())
     }
-    fn register_action_handler(&mut self, tx: UnboundedSender<Action>){
-        self.action_tx = Some(tx);
-
-    }
+    // fn register_action_handler(&mut self, tx: Sender<Action>){
+    //     self.action_tx = Some(tx);
+    //
+    // }
 }

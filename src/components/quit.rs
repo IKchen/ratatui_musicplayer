@@ -8,6 +8,7 @@ use crate::app::App;
 use crate::error::MyError;
 use super::Component;
 
+#[derive(Clone)]
 pub struct Quit {
     component_name:String,
 }

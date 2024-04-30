@@ -1,8 +1,8 @@
+
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
 use std::io::Read;
-use std::time::Duration;
 use crate::error::MyError;
 #[derive(Clone,Debug)]
 // 单句歌词和时间标记
@@ -20,7 +20,7 @@ pub struct LyricController{
 
 impl Lyric{
     pub fn new()->Self{
-        Self{lyric:String::new(),time:String::new()}
+        Self{lyric:String::from("暂无歌词"),time:String::from("[00:00]")}
     }
 }
 impl LyricController {
@@ -28,7 +28,7 @@ impl LyricController {
         let mut path=path;
         let mut lyric=vec![Lyric::new()];
         let mut time=String::new();
-        let mut filestring=String::new();
+        let mut filestring=String::new();//歌词string
         Self{path,lyric,time,filestring}
     }
     //获取文件的异步实现
@@ -52,24 +52,28 @@ impl LyricController {
     //     Ok(())
     // }
     //获取文件的同步实现
-    pub  fn get_file(&mut self)->Result<(),MyError>{
-        let mut entries = fs::read_dir("./music").expect("路径未读取成功");
-        for entry in entries{
-            let path = entry.expect("根据路径获取文件信息失败").path();
-            if path.is_file() {
-                match path.extension().and_then(OsStr::to_str) { // 转换为 &str 以便比较
-                    Some("lrc") => {
-                        File::open(path.clone()).expect("歌词文件打开失败").read_to_string(&mut self.filestring).expect("歌词文件读取失败");
-                        //    println!("Found lyc file: {:?}", path);
-                        //    println!("lyric is \n {}",self.filestring);
-                    }
-                    Some("mp3") => println!("Found mp3 file: {:?}", path),
-                    Some(ext) => println!("Found other type of file: {}, extension: {}", path.display(), ext),
-                    None => println!("File has no extension: {:?}", path),
-                }
-            }
-        }
-        Ok(())
+    // pub  fn get_lyric_path(&mut self)->Result<(),MyError>{
+    //     let mut entries = fs::read_dir("./music").expect("路径未读取成功");
+    //     for entry in entries{
+    //         let path = entry.expect("根据路径获取文件信息失败").path();
+    //         if path.is_file() {
+    //             match path.extension().and_then(OsStr::to_str) { // 转换为 &str 以便比较
+    //                 Some("lrc") => {
+    //                     File::open(path.clone()).expect("歌词文件打开失败").read_to_string(&mut self.filestring).expect("歌词文件读取失败");
+    //                     //    println!("Found lyc file: {:?}", path);
+    //                     //    println!("lyric is \n {}",self.filestring);
+    //                 }
+    //                 Some("mp3") =>{} //println!("Found mp3 file: {:?}", path),
+    //                 Some(ext) =>{} //println!("Found other type of file: {}, extension: {}", path.display(), ext),
+    //                 None =>{}// println!("File has no extension: {:?}", path),
+    //             }
+    //         }
+    //     }
+    //     Ok(())
+    // }
+    pub fn get_lyric(&mut self){
+
+        File::open(self.path.clone()).expect("歌词文件打开失败").read_to_string(&mut self.filestring).expect("歌词文件读取失败");
     }
     pub fn inital_lyric(&mut self)->Vec<Lyric>{
         let lines: Vec<Lyric> = self.filestring.split('\n')

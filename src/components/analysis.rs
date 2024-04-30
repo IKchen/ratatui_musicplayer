@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex};
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use log::info;
 use ratatui::layout::Rect;
@@ -7,20 +7,19 @@ use ratatui::prelude::Color;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Bar, BarChart, BarGroup, Block, Borders};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use crate::action::Action;
 use crate::components::Component;
 use crate::error::MyError;
 
+#[derive(Clone)]
 pub struct Analysis{
     pub data: Vec<(String, u64)>,
 
-    pub action_sender:UnboundedSender<Action>,
+    pub action_sender:Option<Sender<Action>>,
 }
 
 impl Analysis{
-    pub fn new(
-                action:UnboundedSender<Action> )->Self{
+    pub fn new()->Self{
 
         Analysis{
             data: vec![
@@ -38,7 +37,7 @@ impl Analysis{
                 ("B12".to_string(), 0),
             ],
          //   music_reciver,
-            action_sender:action
+            action_sender:None
         }
     }
     // pub async fn get_fft_result(&mut self){
@@ -88,14 +87,14 @@ impl Component for Analysis{
             },
             _ => {}
         }
-        self.action_sender.send(Action::Render).expect("组件发送动作失败");
+      //  self.action_sender.clone().unwrap().send(Action::Render).expect("组件发送动作失败");
         Ok(())
     }
     fn init(&mut self) -> Result<(),MyError> {
         Ok(())
     }
     //注册 事件接收器
-    fn register_action_handler(&mut self, tx: UnboundedSender<Action>) {
-
-    }
+    // fn register_action_handler(&mut self, tx: Sender<Action>) {
+    //     self.action_sender=Some(tx);
+    // }
 }

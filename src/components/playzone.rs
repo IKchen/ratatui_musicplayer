@@ -6,6 +6,7 @@ use crate::action::Action;
 use crate::components::Component;
 use crate::error::MyError;
 
+#[derive(Clone)]
 pub struct PlayZone{
     pub process: u32,
 }

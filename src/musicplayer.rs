@@ -1,61 +1,57 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
-
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-
-
+//rodio 是个同步库，只能在同步环境中使用
 pub struct MusicPlayer
 {
     pub sink: Sink,
     pub stream:rodio::OutputStream,// steam 不能drop 了，不然 handle 就没用了
     pub stream_handle:OutputStreamHandle,
     pub file_path:String,
-    pub sender: UnboundedSender<f32>,
+    pub sender: Sender<f32>,//发送样本数据
+
 }
 
 impl  MusicPlayer {
-    pub fn new(file:String,sender:UnboundedSender<f32>)->Self{
+    pub fn new(sender:Sender<f32>)->Self{
         let (stream, stream_handle) = OutputStream::try_default().unwrap();
 
         let  sink = Sink::try_new(&stream_handle).unwrap();
-
-        let file_path=file;
+        let  file_path=String::from("music/music1.mp3");
 
         Self{sink,stream,stream_handle,file_path,sender}
     }
-    pub async fn handle_action(&self,action: Action){
+    pub  fn handle_action(&mut self, action: Action){
+      //  println!("action is {action:?}");
         match action {
-
-            Start=>{
-            self.sink.play()
+            Action::Start=>{
+            self.play();
             }
-            Play=>{
-
+            Action::Replay=>{
                 self.replay()
 
             }
-            Pause=>{
+            Action::Pause=>{
                 self.pause()
+            }
+            Action::Stop=>{
+                self.stop()
             }
             _=>{
             }
         }
     }
-  pub  async fn play(&self) {
+  pub  fn play(&mut self) {
 
-      let file_path = self.file_path.clone();
       let sample_sender = self.sender.clone();
-     // let mut sink_clone=Arc::clone(&self.sink);
-
       //解码文件
-      let file1 = File::open("music/music1.mp3").expect("文件路径有问题");
+      let file1 = File::open(self.file_path.clone()).expect("文件路径有问题");
       let buf_reader1 = BufReader::new(file1);
       let mut source1 = Decoder::new(buf_reader1).unwrap().convert_samples::<f32>();
       let mut my_source = MyCustomSource::new(source1, sample_sender);
-     // println!("source time is {:?}", my_source.total_duration());
+    //  println!("即将播放");
       self.sink.append(my_source);
       self.sink.sleep_until_end();
       // spawn(move || {
@@ -76,13 +72,6 @@ impl  MusicPlayer {
       // sink_guard.sleep_until_end(); // 正确调用Sink的方法
 
   }
-    pub fn get_music_duration(&mut self)->u64{
-        let file_path = self.file_path.clone();
-        let path = Path::new(&file_path);
-        let time = mp3_duration::from_path(&path).expect("获取时间失败");
-        let time_value=time.as_secs();
-        time_value
-    }
     //暂停音乐
     pub fn pause(&self) {
         self.sink.pause();
@@ -95,19 +84,19 @@ impl  MusicPlayer {
     pub fn replay(&self) {
         self.sink.play();
     }
-    pub fn set_play_path(&mut self,file:String){
+    pub fn set_path(&mut self, file:String){
         self.file_path=file;
     }
 }
 
 
 use rodio::{ Sample};
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread::spawn;
 use std::time::{Duration, Instant};
-use futures::future::ok;
-use tokio::task::JoinHandle;
+
 use crate::action::Action;
+use crate::app::App;
 use crate::error::MyError;
 
 //自定义source类型
@@ -115,11 +104,11 @@ pub struct MyCustomSource<I:Source>
 where <I as Iterator>::Item: rodio::Sample
 {
     input_source: I,
-    sample_sender: UnboundedSender<f32>,
+    sample_sender: Sender<f32>,
 }
 impl <I: rodio::Source> MyCustomSource<I> where <I as Iterator>::Item: rodio::Sample
 {
-    pub fn new(source:I,sample_sender: UnboundedSender<f32>)->Self{
+    pub fn new(source:I,sample_sender: Sender<f32>)->Self{
         Self{
             input_source:source,
             sample_sender,

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use futures::{SinkExt, TryFutureExt};
-use futures::future::ok;
+
 use log::info;
 use rodio::{Decoder, Source};
 use rustfft::num_complex::Complex;
@@ -22,30 +22,29 @@ pub struct FFTController
 {
     pub pause: bool,
     pub stop: bool,
-    pub file_path:String,
+    //pub app:Arc<Mutex<App>>,
     pub music_tx: UnboundedSender<Vec<f32>>,
     pub complex_samples: Vec<Complex<f32>>,
     pub sample_rate:f32,
     pub fft_size:usize,
-    pub sample_receive:UnboundedReceiver<f32>,
-    pub action_sender: UnboundedSender<Action>,//发送action 给render，通知他更新组件
+    pub sample_receive:Receiver<f32>,
+
 }
 
 impl FFTController
 
 {
-    pub fn new(file:String,sample_rate: f32, fft_size: usize,sample_receiver: UnboundedReceiver<f32>,music_tx: UnboundedSender<Vec<f32>>,action_sender: UnboundedSender<Action>) -> Self {
-        let file_path=file;
+    pub fn new(sample_rate: f32, fft_size: usize,sample_receiver: Receiver<f32>,music_tx: UnboundedSender<Vec<f32>>) -> Self {
+
         Self {
             pause: false,
             stop: false,
-            file_path,
+           // app,
             music_tx,
             complex_samples: Vec::new(), // 初始化为空，或者你可以根据需要预填充
             sample_rate:44100.0,
             fft_size:4096,
             sample_receive:sample_receiver,
-            action_sender,
         }
     }
     pub fn set_pause(&mut self) {
@@ -54,7 +53,7 @@ impl FFTController
     pub fn set_stop(&mut self) {
         self.stop = true;
     }
-    pub async fn start_process(&mut self)->JoinHandle<Result<(), MyError>>
+    pub  fn start_process(&mut self)
 
     {
        //-----打开音频文件的实现
@@ -77,11 +76,11 @@ impl FFTController
         //              self.complex_samples.clear();
         //          }
         //      }
-        tokio::spawn({
+
             //-------接收receiver版本的实现
             let mut planner = FftPlanner::new();
             let fft = planner.plan_fft_forward(4096); // 假设使用 4096 点 FFT
-            while let sample=self.sample_receive.recv().await.unwrap() {
+            while let sample=self.sample_receive.recv().unwrap() {
                 self.complex_samples.push(Complex::from(sample));
                 if self.complex_samples.len() >= 4096{
                     fft.process(self.complex_samples.as_mut_slice());
@@ -90,8 +89,8 @@ impl FFTController
                     self.complex_samples.clear();
                 }
             }
-            ok(())
-        })
+           // ok(())
+
 
     }
 
@@ -132,11 +131,12 @@ impl FFTController
 
           //  println!("{}: {}", note_name, energy,);
         }
-     //   self.action_sender.send(Action::Render).unwrap();//发送更新动作，让render组件接收fft结果，然后重新渲染
+      //  println!("{:?}", note_energies,);
         self.music_tx.clone().send(note_energies).expect("fft发送失败");
     }
 }
 
+//这个函数专门接收fft处理的结果
  pub async fn get_fft_result(mut music_reciver:UnboundedReceiver<Vec<f32>>, app:Arc<Mutex<App>>) ->(JoinHandle<()>){
 
     let get_fft_result_handle= tokio::spawn(async move{
@@ -144,11 +144,10 @@ impl FFTController
          while let mut fft_result=music_reciver.recv().await.unwrap(){
              info!("更新data数据");
              //  println!("fft 是{:?}",fft_result);
-          //   let mut buffer = fft_result_buffer.lock().await;
              for ((name, value), new_value) in fft_buffer_clone.lock().await.iter_mut().zip(fft_result.iter()) {
                  *value = *new_value as u64; // 将第一个数组中的值替换为第二个数组的值
              }
-            //   println!("data is {:?}",fft_result_buffer);
+            //   println!("data is {:?}",fft_buffer_clone);
          }
      });
 

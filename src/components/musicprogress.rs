@@ -9,6 +9,7 @@ use crate::action::Action;
 use crate::components::Component;
 use crate::error::MyError;
 
+#[derive(Clone)]
 pub struct MusicProgress{
     pub progress: u16,
     pub total_duration:u64,
@@ -23,24 +24,8 @@ impl MusicProgress{
     pub fn get_duration(&mut self,total_duration:u64){
         self.total_duration=total_duration;
     }
-    pub fn start_count(&mut self){
-        let achive=Arc::new(Mutex::new(self.achive_duration));
-        let start = Instant::now();
-      //   let total=self.total_duration.clone();
-      // thread::spawn(move || {
-      //
-      //       loop {
-      //           let elapsed = start.elapsed();
-      //           if elapsed.as_secs() >= total{
-      //               break;
-      //           }
-      //           // 更新计时器的值
-      //           *achive.lock().expect("获取失败") = elapsed;
-      //           // 休眠一段时间，以减少 CPU 使用率
-      //           thread::sleep(Duration::from_millis(100));
-      //       }
-      //   });
-
+    pub fn reset_count(&mut self){
+        self.start=Instant::now();
     }
     pub fn set_count(&mut self){
         if self.start.elapsed().as_secs()>=self.total_duration { self.achive_duration=Duration::from_secs(0) }
