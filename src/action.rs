@@ -129,7 +129,7 @@ impl ActionReactor {
                                 } else {
                                      last_tick_key_events_react.drain(..);//清空数组
                                     last_tick_key_events_react.push(Action::Up);
-                                    info!("发送动作: Action::Up");
+                              //      info!("发送动作: Action::Up");
                                     self.app.lock().await.components.file_list_component.update(Some(Action::Up)).unwrap();
                                 //    println!("action is Action::up");
                                 }
@@ -142,7 +142,7 @@ impl ActionReactor {
                                      last_tick_key_events_react.drain(..);//清空数组
                                     last_tick_key_events_react.push(Action::Down);
                                     self.app.lock().await.components.file_list_component.update(Some(Action::Down)).unwrap();
-                                    info!("发送动作: Aciton::Down");
+                                //    info!("发送动作: Aciton::Down");
                                   //  println!("发送动作 action is Action::down");
                                 }
                             }
@@ -155,27 +155,50 @@ impl ActionReactor {
                                     last_tick_key_events_react.push(Action::Selected);
                                     let selected_id=self.app.lock().await.components.file_list_component.get_selected_item_id();
                                     let playing_id=self.app.lock().await.sounds_list.playing_item_id;
+                                    let playing_state=self.app.lock().await.is_paused;
                                     match selected_id {
                                         None => {info!("没有成功获取 选中数据的id")}
                                         Some(id) if Some(id) == playing_id => {
                                             // 如果选中的id和正在播放的id一致，则发送暂停动作
-                                            action_sender.send((Action::Pause, None)).expect("发送动作失败");
+                                          //  println!("the id is {id:}");
+                                            match  playing_state {
+                                                true => {
+                                                    action_sender.clone().send((Action::Replay, None)).expect("发送动作失败");
+                                                    self.app.lock().await.is_paused=false;
+                                                    self.app.lock().await.components.lyric_zone.handle_action(Some(Action::Replay)).expect("组件更新失败");//传递动作给组件
+                                                    self.app.lock().await.components.music_progress.handle_action(Some(Action::Replay)).unwrap()
+                                                }
+                                                false => {
+                                                    action_sender.clone().send((Action::Pause, None)).expect("发送动作失败");
+                                                    self.app.lock().await.is_paused=true;
+                                                    self.app.lock().await.components.lyric_zone.handle_action(Some(Action::Pause)).expect("组件更新失败");//传递动作给组件
+                                                    self.app.lock().await.components.music_progress.handle_action(Some(Action::Pause)).unwrap()
+                                                }
+                                            }
+
                                         }
                                         _=>{
                                             //如果是新的id ，就准备播放
+                                            action_sender.send((Action::Stop,None )).expect("发送动作失败");//先停止音乐
                                             self.app.lock().await.set_filelist_component_seleted_item();//设置播放音频的id
                                             self.app.lock().await.set_musicprogress_component_total_duration();//设置音频总时长
-                                            self.app.lock().await.components.music_progress.reset_count();//重置音频计时
                                             self.app.lock().await.set_playing_message();//重置音频信息
                                             self.app.lock().await.set_lyric();//重置音频歌词
+                                            self.app.lock().await.components.lyric_zone.handle_action(Some(Action::Start)).expect("组件更新失败");//传递动作给组件
+                                            self.app.lock().await.components.music_progress.handle_action(Some(Action::Start)).unwrap();
                                             let path=self.app.lock().await.sounds_list.get_playingsound_path();
+
                                             action_sender.send((Action::Start,Some(path) )).expect("发送动作失败");
+
+
+
                                         }
+
                                     }
                                    // println!("seleced_id is {selected_id:?},playing_id is {playing_id:?}");
 
 
-                                    info!("发送动作: Aciton::Enter");
+                                 //   info!("发送动作: Aciton::Enter");
                                 }
                             }
                             _ => (),

@@ -24,7 +24,7 @@ impl  MusicPlayer {
         Self{sink,stream,stream_handle,file_path,sender}
     }
     pub  fn handle_action(&mut self, action: Action){
-      //  println!("action is {action:?}");
+       // info!("action is {action:?}");
         match action {
             Action::Start=>{
                 self.play();
@@ -33,10 +33,12 @@ impl  MusicPlayer {
                 self.replay()
             }
             Action::Pause=>{
-                self.pause()
+            //    println!("music is paused {:?}",self.sink.is_paused());
+                self.pause();
             }
             Action::Stop=>{
-                self.stop()
+                self.stop();
+           //     println!("music is stop ");
             }
             _=>{
             }
@@ -50,25 +52,8 @@ impl  MusicPlayer {
       let buf_reader1 = BufReader::new(file1);
       let mut source1 = Decoder::new(buf_reader1).unwrap().convert_samples::<f32>();
       let mut my_source = MyCustomSource::new(source1, sample_sender);
-    //  println!("即将播放");
       self.sink.append(my_source);
-      self.sink.sleep_until_end();
-      // spawn(move || {
-      //      let  mut sink_guard=sink_clone.lock().unwrap();
-      //   //  if let Some(sink) = &mut *sink_guard { // 解引用MutexGuard并匹配Option,获取解引用后的值的引用，不获取所有权
-      //
-      //         sink_guard.append(my_source); // 正确调用Sink的方法
-      //         println!("播放成功");
-      //         sink_guard.sleep_until_end(); // 正确调用Sink的方法
-      //        drop(sink_guard);
-      //    // }
-      //
-      // }); // 注意这里添加了await来等待spawn_blocking里的任务完成
-      // let  mut sink_guard=sink_clone.lock().unwrap();
-      // sink_guard.append(my_source); // 正确调用Sink的方法
-      //
-      // println!("播放成功");
-      // sink_guard.sleep_until_end(); // 正确调用Sink的方法
+   //   self.sink.sleep_until_end();//之前外面的线程有loop循环，这里就要不睡眠线程，不然外面recv无法接收到action
 
   }
     //暂停音乐
@@ -93,6 +78,7 @@ use rodio::{ Sample};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread::spawn;
 use std::time::{Duration, Instant};
+use tracing::info;
 
 use crate::action::Action;
 use crate::app::App;
@@ -154,6 +140,10 @@ impl<I> Source for MyCustomSource<I>
 mod tests {
     use std::fs::File;
     use std::io::BufReader;
+    use std::thread;
+    use tokio::sync::mpsc;
+    use crate::action::Action;
+    use crate::musicplayer::MusicPlayer;
 
     #[test]
     fn test_file_open() {
@@ -171,5 +161,23 @@ mod tests {
                 assert!(false);
             }
         }
+    }
+    #[test]
+    fn test_music_pause() {
+        // 创建 ActionReactor 和 music 之间的通道
+        let (action_sender, mut action_receiver) = std::sync::mpsc::channel();
+        let (sample_sender,sample_receiver)= std::sync::mpsc::channel();;//播放时，发送样本数据给fft
+        action_sender.send((Action::Pause,"None".to_string())).unwrap();
+        thread::spawn(move||{
+
+            let mut musicplayer = MusicPlayer::new( sample_sender);
+            loop {
+                if let (action,_path) = action_receiver.recv().unwrap() {
+                    musicplayer.handle_action(action);
+                    assert!(musicplayer.sink.is_paused());
+                }
+            }
+
+        });
     }
 }

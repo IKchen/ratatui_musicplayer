@@ -119,7 +119,6 @@ impl Render {
     pub async fn run(&mut self,app: Arc<Mutex<App>>)->Result<(),MyError>{
         let mut app=app.lock().await;
         let data=app.fft_result.lock().await.clone();
-        app.components.music_progress.set_count();//开始播放计时,这里的时间要考虑不同的歌曲，计时要清零
         app.components.analysis.set_data(data);//设置fft数据
         self.tui.terminal.draw( |frame| {
                                                 let layout=Layout::new(

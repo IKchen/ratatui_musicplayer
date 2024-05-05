@@ -41,6 +41,7 @@ pub struct App{
     pub fft_result:Arc<Mutex<Vec<(String,u64)>>>,
     pub components: Components,
     pub is_quiting:bool,//判断是否渲染退出弹窗
+    pub is_paused:bool,//判断是否被暂停（不能用playing id 进行判断）
 }
 impl App{
     pub fn new()->Self{
@@ -51,21 +52,21 @@ impl App{
         let mut sounds_list=SoundsList::set_path("music".to_string());
         let mut fft_result=Arc::new(Mutex::new(
             vec![
-                ("B1".to_string(), 0u64),
-                ("B2".to_string(), 0u64),
-                ("B3".to_string(), 0u64),
-                ("B4".to_string(), 0u64),
-                ("B5".to_string(), 0u64),
-                ("B6".to_string(), 0u64),
-                ("B7".to_string(), 0u64),
-                ("B8".to_string(), 0u64),
-                ("B9".to_string(), 0u64),
-                ("B10".to_string(), 0u64),
-                ("B11".to_string(), 0u64),
-                ("B12".to_string(), 0u64),]
+                ("C".to_string(), 0u64),
+                ("C#".to_string(), 0u64),
+                ("D".to_string(), 0u64),
+                ("D#".to_string(), 0u64),
+                ("E".to_string(), 0u64),
+                ("F".to_string(), 0u64),
+                ("F#".to_string(), 0u64),
+                ("G".to_string(), 0u64),
+                ("G#".to_string(), 0u64),
+                ("A".to_string(), 0u64),
+                ("A#".to_string(), 0u64),
+                ("B".to_string(), 0u64),]
         ));
         let components= crate::components::Components::new();
-        Self{should_quit,frame_rate,tick_rate,sounds_list,fft_result,log,components,is_quiting:false}
+        Self{should_quit,frame_rate,tick_rate,sounds_list,fft_result,log,components,is_quiting:false,is_paused:false}
     }
     //初始化组件
     pub fn init_component(&mut self, action_sender: Sender<(Action,Option<String>)>){
@@ -214,8 +215,8 @@ pub async fn runner() ->Result<(),MyError>{
         let mut musicplayer = MusicPlayer::new( sample_sender);
         loop {
 
-
             if let (action,path) = action_receiver.recv().unwrap() {
+               // println!("action is {action:?}");
                 match path{
                     None => {}
                     Some(path) => {musicplayer.set_path(path.clone()); }

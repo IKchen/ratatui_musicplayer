@@ -98,7 +98,7 @@ pub fn handle_crossterm_event(event_tx: &UnboundedSender<Event>, maybe_event: Cr
         CrosstermEvent::Key(key) => {
             if key.kind == KeyEventKind::Press {
                 event_tx.send(Event::Key(key)).unwrap();
-                info!("发送事件 is {:?}\n", Event::Key(key));
+              //  info!("发送事件 is {:?}\n", Event::Key(key));
              //   println!("发送事件 is {:?}", Event::Key(key));
             }
         },

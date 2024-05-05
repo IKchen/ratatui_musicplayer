@@ -22,7 +22,8 @@ impl PlayZone{
 }
 impl Component for PlayZone{
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) -> Result<(), MyError> {
-        let paragraph=Paragraph::new(self.playing_message.clone())
+        let message="正在播放：  ".to_string()+& self.playing_message.clone();
+        let paragraph=Paragraph::new(message)
             .block( Block::new()
                 .title("播放信息").red()
                 .borders(Borders::ALL)).blue();
