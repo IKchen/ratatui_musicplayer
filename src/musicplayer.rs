@@ -28,16 +28,20 @@ impl  MusicPlayer {
         match action {
             Action::Start=>{
                 self.play();
+                info!("音频开始播放");
             }
             Action::Replay=>{
-                self.replay()
+                self.replay();
+                info!("音频已恢复");
             }
             Action::Pause=>{
             //    println!("music is paused {:?}",self.sink.is_paused());
                 self.pause();
+                info!("音频已暂停");
             }
             Action::Stop=>{
                 self.stop();
+                info!("音频已停止");
            //     println!("music is stop ");
             }
             _=>{

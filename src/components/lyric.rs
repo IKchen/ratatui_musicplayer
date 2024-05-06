@@ -29,7 +29,7 @@ impl LyricZone{
     pub fn next(&mut self) {
         let i = match self.lyric_state.selected() {
             Some(i) => {
-                if i >= self.lyric.len() - 1 {
+                if i >= self.lyric.len()-1  {
                     0
                 } else {
                     i + 1
@@ -124,22 +124,36 @@ impl Component for LyricZone{
     }
 
     fn update(&mut self, action: Option<Action>) -> Result<(), MyError> {
-        let i = self.lyric_state.selected().unwrap_or(0);
-        if let Some(time) = self.lyric[i].time.split_once(':') {
-            let minutes = time.0.parse::<u64>().unwrap_or(0);
-            // 分割秒和小数部分
-
-            let seconds_and_decimals: Vec<&str> = time.1.split('.').collect();
-            let seconds: u64 = seconds_and_decimals[0].parse().unwrap_or(0);
-            let decimals: u64 = seconds_and_decimals.get(1).map_or(0, |x| x.parse().unwrap_or(0));
-
-
-            // 将分钟和秒数转换为Duration
-            let now_duration = Duration::new(minutes * 60 + seconds, 0) + Duration::from_millis(decimals * 10);
-            if self.elapsed>=now_duration{//时长大于当前的时间戳，就往下走一句
-                self.next()
+         match self.lyric_state.selected(){
+            None => {
+                self.lyric_state.select(Some(0));
             }
-        }
+            Some(i) if i >=self.lyric.len()-1 => {
+                    self.lyric_state.select(Some(i));
+                }
+            Some(i) if i <self.lyric.len()-1 =>{
+                //这里i+1是与下一条歌词时间标签进行比较
+                if let Some(time) = self.lyric[i+1].time.split_once(':') {
+                    let minutes = time.0.parse::<u64>().unwrap_or(0);
+                    // 分割秒和小数部分
+
+                    let seconds_and_decimals: Vec<&str> = time.1.split('.').collect();
+                    let seconds: u64 = seconds_and_decimals[0].parse().unwrap_or(0);
+                    let decimals: u64 = seconds_and_decimals.get(1).map_or(0, |x| x.parse().unwrap_or(0));
+
+
+                    // 将分钟和秒数转换为Duration
+                    let now_duration = Duration::new(minutes * 60 + seconds, 0) + Duration::from_millis(decimals * 10);
+                    if self.elapsed>=now_duration{//时长大于当前的时间戳，就往下走一句
+                        self.next()
+                    }
+                }
+
+            }
+           // Some(i) if i ==0 =>{ self.lyric_state.select(Some(0));}
+
+             Some(_) => {}
+         };
 
 
         Ok(())
