@@ -25,6 +25,7 @@ impl MusicProgress{
     }
     pub fn get_duration(&mut self,total_duration:u64){
         self.total_duration=total_duration;
+        self.reset();//获得总时长后重置计时
     }
 
     // 停止秒表

@@ -38,7 +38,7 @@ impl LyricZone{
             None => 0,
         };
         self.lyric_state.select(Some(i));
-        if i>5 { *self.lyric_state.offset_mut()=i-5; }
+        if i>10 { *self.lyric_state.offset_mut()=i-10; }
 
     }
     //初始化设置

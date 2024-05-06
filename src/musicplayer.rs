@@ -41,7 +41,7 @@ impl  MusicPlayer {
             }
             Action::Stop=>{
                 self.stop();
-                info!("音频已停止");
+                info!("append已清空");
            //     println!("music is stop ");
             }
             _=>{
