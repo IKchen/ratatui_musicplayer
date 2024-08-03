@@ -32,8 +32,16 @@ use crate::render::Render;
 use crate::sounds::SoundsList;
 use crate::tracing::{ recv_log, TracingLog};
 
+pub enum AppState{
+    Home,
+    Play,
+    Pause,
+    Quit,
+}
+
 pub struct App{
-    pub should_quit:bool,
+    pub should_quit:bool,//判断是否推出程序
+    pub appstate:AppState,//这个action没用它，用的is——quiting
     pub tick_rate: f64,
     pub frame_rate: f64,
     pub log: Vec<String>,//日志
@@ -46,6 +54,7 @@ pub struct App{
 impl App{
     pub fn new()->Self{
         let should_quit =false;
+        let appstate=AppState::Home;
         let frame_rate=60.0;
         let tick_rate=4.0;
         let mut log=vec![String::new()];
@@ -66,7 +75,7 @@ impl App{
                 ("B".to_string(), 0u64),]
         ));
         let components= crate::components::Components::new();
-        Self{should_quit,frame_rate,tick_rate,sounds_list,fft_result,log,components,is_quiting:false,is_paused:false}
+        Self{should_quit,appstate,frame_rate,tick_rate,sounds_list,fft_result,log,components,is_quiting:false,is_paused:false}
     }
     //初始化组件
     pub fn init_component(&mut self, action_sender: Sender<(Action,Option<String>)>){
@@ -166,6 +175,7 @@ pub async fn runner() ->Result<(),MyError>{
 
 
     let mut tui = Tui::new()?;
+    tui.start();
     let mut handler=event::EventHandler::new();
     let mut reactor=ActionReactor::new(action_sender.clone(),Arc::clone(&app_clone));
     app_clone.lock().await.init_component(action_sender.clone());
@@ -230,13 +240,13 @@ pub async fn runner() ->Result<(),MyError>{
 
     //join handle,等待异步handle 执行完任务，才退出主流程，不然主流程会执行完就退出了
     // spawn 生成的异步task，由Tokio 的任务调度器负责调度任务队列
-  tokio::join!(
-        //   handler.run(),没有所有权了
-           react,
-           render1,
-           recv_handle,//异步获取tracing 日志
-           fft_result_set_handle,
-      );
+//   tokio::join!(
+//         //   handler.run(),没有所有权了
+//            react,
+//            render1,
+//            recv_handle,//异步获取tracing 日志
+//            fft_result_set_handle,
+//       );
 
 
     //检查各个任务的返回结果
@@ -249,6 +259,19 @@ pub async fn runner() ->Result<(),MyError>{
     //     if let Err(render_err) = Result::<(), _>::Err(render_err) {
     //         eprintln!("Error in app run: {:?}", render_err);
     //     }
+if app_clone.lock().await.should_quit!=true{
+    tokio::join!(
+        //   handler.run(),没有所有权了
+           react,
+           render1,
+           recv_handle,//异步获取tracing 日志
+           fft_result_set_handle,
+      );
+}else {
+    println!("app should quit");
+}
+
+ 
 
     Ok(())
 }

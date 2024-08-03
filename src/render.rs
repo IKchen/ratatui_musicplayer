@@ -158,8 +158,16 @@ impl Render {
                                                         app.components.quit.draw(frame,frame.size()).unwrap()
                                                     }
                                                 }
+                    
 
                                            })?;
+                                           match app.should_quit {
+                                            false => {}
+                                            true=>{
+                                                self.cancel();
+                                                self.tui.exit().expect("退出失败")
+                                            }
+                                        }
         Ok(())
     }
     pub fn cancel(&mut self){

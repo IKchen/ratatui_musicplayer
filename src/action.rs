@@ -11,6 +11,7 @@ use serde::{
     de::{self, Deserializer, Visitor},
     Deserialize, Serialize,
 };
+use crate::components::home::Home;
 use crate::event::Event;
 use futures::{FutureExt, StreamExt};
 use tracing::info;
@@ -97,6 +98,8 @@ impl ActionReactor {
                                     self.app.lock().await.is_quiting=true;
                                     info!("发送动作: Action::Quit", );
                                 }
+                        
+                              
                             }
                             KeyCode::Char('y') => {
                                 if let Err(err) = action_sender.send((Action::Yes,None)) {
@@ -105,10 +108,13 @@ impl ActionReactor {
                                     last_tick_key_events_react.drain(..);//存入时，先清空数组
                                     last_tick_key_events_react.push(Action::Quit);
                                     if self.app.lock().await.is_quiting==true{
-                                        self.app.lock().await.quit_toast();
+                                       // self.app.lock().await.quit_toast();
+                                        self.app.lock().await.should_quit=true;
+                                        action_sender.send((Action::Stop,None)).expect("音乐停止失败");
                                     }
                                     info!("发送动作: Action::Yes", );
                                 }
+                        
                             }
                             KeyCode::Char('n') => {
                                 if let Err(err) = action_sender.send((Action::No,None )) {
@@ -120,6 +126,7 @@ impl ActionReactor {
                                         self.app.lock().await.quit_toast();
                                     }
                                     info!("发送动作: Action::No", );
+
                                 }
                             }
                             KeyCode::Up => {

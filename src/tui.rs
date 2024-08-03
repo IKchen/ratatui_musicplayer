@@ -35,9 +35,8 @@ impl Tui{
     }
     //退出
     pub fn exit(&mut self)->Result<(),MyError>{
-        self.cancel()?;
-        crossterm::terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+        Self::reset()?;
+        self.terminal.show_cursor()?;
         Ok(())
     }
     //获取下一事件
